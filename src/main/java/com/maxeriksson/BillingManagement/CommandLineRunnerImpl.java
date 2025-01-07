@@ -230,7 +230,11 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
         }
         Optional<Bill> bill = billRepository.findById(id.get());
         if (bill.isPresent()) {
-            System.out.println("Bill found in Registry:\n  " + bill.get());
+            String message =
+                    bill.get().isPaid()
+                            ? "Bill found in Registry"
+                            : "Unpaid Bill found in Registry";
+            System.out.println(message + ":\n  " + bill.get());
             if (in.inputConfirmation("Delete")) {
                 billRepository.delete(bill.get());
             }
