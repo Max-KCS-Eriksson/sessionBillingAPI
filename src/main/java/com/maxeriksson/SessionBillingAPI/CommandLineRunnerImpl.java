@@ -10,8 +10,10 @@ import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,7 +24,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-/** CommandLineRunnerImpl */
+/** Legacy command-line adapter for registry workflows during the REST migration. */
+@Component
+@ConditionalOnProperty(name = "session-billing.cli.enabled", havingValue = "true")
 public class CommandLineRunnerImpl implements CommandLineRunner {
 
     private CommandLineInput in = new CommandLineInput();
