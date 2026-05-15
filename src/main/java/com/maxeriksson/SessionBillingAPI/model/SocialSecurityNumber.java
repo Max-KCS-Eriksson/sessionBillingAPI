@@ -1,4 +1,4 @@
-package com.maxeriksson.BillingManagement.model;
+package com.maxeriksson.SessionBillingAPI.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

@@ -1,4 +1,4 @@
-package com.maxeriksson.BillingManagement;
+package com.maxeriksson.SessionBillingAPI;
 
 import java.util.List;
 import java.util.Scanner;

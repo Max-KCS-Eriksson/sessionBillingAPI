@@ -1,12 +1,12 @@
-package com.maxeriksson.BillingManagement;
+package com.maxeriksson.SessionBillingAPI;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BillingManagementApplication {
+public class SessionBillingAPIApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(BillingManagementApplication.class, args);
+        SpringApplication.run(SessionBillingAPIApplication.class, args);
     }
 }

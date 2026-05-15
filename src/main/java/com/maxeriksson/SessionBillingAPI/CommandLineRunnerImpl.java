@@ -1,13 +1,13 @@
-package com.maxeriksson.BillingManagement;
+package com.maxeriksson.SessionBillingAPI;
 
-import com.maxeriksson.BillingManagement.model.Bill;
-import com.maxeriksson.BillingManagement.model.BillId;
-import com.maxeriksson.BillingManagement.model.Customer;
-import com.maxeriksson.BillingManagement.model.Service;
-import com.maxeriksson.BillingManagement.model.SocialSecurityNumber;
-import com.maxeriksson.BillingManagement.repository.BillRepository;
-import com.maxeriksson.BillingManagement.repository.CustomerRepository;
-import com.maxeriksson.BillingManagement.repository.ServiceRepository;
+import com.maxeriksson.SessionBillingAPI.model.Bill;
+import com.maxeriksson.SessionBillingAPI.model.BillId;
+import com.maxeriksson.SessionBillingAPI.model.Customer;
+import com.maxeriksson.SessionBillingAPI.model.Service;
+import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
+import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
+import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -35,14 +35,14 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("Welcome to the Billing Management System\n");
+        System.out.println("Welcome to the Session Billing API\n");
 
         boolean isRunning = true;
         String[] menuChoices = {
             "Handle Billing",
             "Handle Customer Registry",
             "Handle Service Registry",
-            "Exit the Billing Management System"
+            "Exit the Session Billing API"
         };
         while (isRunning) {
             printHumanReadableMenuChoiceIndexes(menuChoices);
@@ -62,7 +62,7 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
             }
         }
 
-        System.out.println("Thank you for using the Billing Management System\nGoodbye");
+        System.out.println("Thank you for using the Session Billing API\nGoodbye");
         in.close();
     }
 

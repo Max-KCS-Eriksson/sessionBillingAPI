@@ -1,7 +1,7 @@
-package com.maxeriksson.BillingManagement.repository;
+package com.maxeriksson.SessionBillingAPI.repository;
 
-import com.maxeriksson.BillingManagement.model.Customer;
-import com.maxeriksson.BillingManagement.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.Customer;
+import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

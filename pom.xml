@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.maxeriksson</groupId>
-	<artifactId>BillingManagement</artifactId>
+	<artifactId>SessionBillingAPI</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>BillingManagement</name>
+	<name>SessionBillingAPI</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>
@@ -62,7 +62,7 @@
               <!-- $ mvn clean compile assembly:single -->
               <!-- Run JAR with: -->
               <!-- $ java -jar target/*.jar -->
-              <mainClass>com.maxeriksson.BillingManagement.BillingManagementApplication</mainClass>
+              <mainClass>com.maxeriksson.SessionBillingAPI.SessionBillingAPIApplication</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

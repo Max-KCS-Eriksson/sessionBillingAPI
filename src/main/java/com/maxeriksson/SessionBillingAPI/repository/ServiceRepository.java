@@ -1,6 +1,6 @@
-package com.maxeriksson.BillingManagement.repository;
+package com.maxeriksson.SessionBillingAPI.repository;
 
-import com.maxeriksson.BillingManagement.model.Service;
+import com.maxeriksson.SessionBillingAPI.model.Service;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
