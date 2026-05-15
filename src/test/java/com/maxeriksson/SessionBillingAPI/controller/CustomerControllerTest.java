@@ -54,7 +54,36 @@ class CustomerControllerTest {
         verify(customerRepository).findAll();
     }
 
+    
+
     @Test
+    void findBySocialSecurityNumberReturnsCustomer() throws Exception {
+        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+        Customer customer = new Customer(id, "Ada", "Lovelace", "Example Street");
+        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.of(customer));
+
+        mockMvc.perform(get("/customers/19900102-0123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.socialSecurityNumber.dateOfBirth").value("1990-01-02"))
+                .andExpect(jsonPath("$.socialSecurityNumber.idLastFour").value("0123"));
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+    }
+
+    @Test
+    void findBySocialSecurityNumberReturnsNotFound() throws Exception {
+        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/customers/19900102-0123")).andExpect(status().isNotFound());
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+    }
+
+    @Test
+    void findBySocialSecurityNumberReturnsBadRequestForInvalidFormat() throws Exception {
+        mockMvc.perform(get("/customers/invalid")).andExpect(status().isBadRequest());
+    }
+@Test
     void createReturnsCreatedWhenCustomerDoesNotExist() throws Exception {
         when(customerRepository.existsById(any(SocialSecurityNumber.class))).thenReturn(false);
         Customer customer =

@@ -46,11 +46,20 @@ public class CustomerController {
     }
 
     /**
-     * Creates a new customer when the social security number is not already registered.
+     * Finds one customer by social security number.
      *
-     * @param request customer payload to persist
-     * @return the created customer
+     * @param socialSecurityNumber customer identifier from request path
+     * @return matching customer or 404
      */
+    @GetMapping("/{socialSecurityNumber}")
+    public ResponseEntity<Customer> findBySocialSecurityNumber(@PathVariable String socialSecurityNumber) {
+        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+        return customerRepository
+                .findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<Customer> create(@RequestBody CustomerCreateRequest request) {
         SocialSecurityNumber socialSecurityNumber =
@@ -69,13 +78,6 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerRepository.save(createdCustomer));
     }
 
-    /**
-     * Fully replaces an existing customer using strict PUT semantics.
-     *
-     * @param socialSecurityNumber customer identifier from the request path
-     * @param request replacement payload
-     * @return the replaced customer
-     */
     @PutMapping("/{socialSecurityNumber}")
     public ResponseEntity<Customer> replace(
             @PathVariable String socialSecurityNumber, @RequestBody CustomerReplaceRequest request) {
@@ -93,13 +95,6 @@ public class CustomerController {
         return ResponseEntity.ok(customerRepository.save(existingCustomer));
     }
 
-    /**
-     * Partially updates an existing customer.
-     *
-     * @param socialSecurityNumber customer identifier from the request path
-     * @param request patch payload
-     * @return the updated customer
-     */
     @PatchMapping("/{socialSecurityNumber}")
     public ResponseEntity<Customer> patch(
             @PathVariable String socialSecurityNumber, @RequestBody CustomerPatchRequest request) {
@@ -123,15 +118,9 @@ public class CustomerController {
         return ResponseEntity.ok(customerRepository.save(existingCustomer));
     }
 
-    /**
-     * Parses a social security number path token in the format yyyyMMdd-xxxx.
-     *
-     * @param socialSecurityNumber customer identifier from request path
-     * @return parsed social security number object
-     */
     private SocialSecurityNumber toSocialSecurityNumber(String socialSecurityNumber) {
         String[] parts = socialSecurityNumber.split("-");
-        if (parts.length != 2) {
+        if (parts.length != 2 || parts[0].length() != 8 || parts[1].length() != 4) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
         }
 
@@ -148,15 +137,6 @@ public class CustomerController {
         }
     }
 
-    /**
-     * Request payload for creating a customer.
-     *
-     * @param dateOfBirth customer date of birth
-     * @param idLastFour customer social security number suffix
-     * @param firstName customer first name
-     * @param lastName customer last name
-     * @param address customer address
-     */
     public record CustomerCreateRequest(
             LocalDate dateOfBirth,
             Integer idLastFour,
@@ -164,21 +144,7 @@ public class CustomerController {
             String lastName,
             String address) {}
 
-    /**
-     * Request payload for fully replacing a customer.
-     *
-     * @param firstName customer first name
-     * @param lastName customer last name
-     * @param address customer address
-     */
     public record CustomerReplaceRequest(String firstName, String lastName, String address) {}
 
-    /**
-     * Request payload for patching a customer.
-     *
-     * @param firstName customer first name
-     * @param lastName customer last name
-     * @param address customer address
-     */
     public record CustomerPatchRequest(String firstName, String lastName, String address) {}
 }
