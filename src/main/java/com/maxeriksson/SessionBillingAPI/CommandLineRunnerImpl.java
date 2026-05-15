@@ -12,7 +12,6 @@ import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,7 +23,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /** CommandLineRunnerImpl */
-@Component
 public class CommandLineRunnerImpl implements CommandLineRunner {
 
     private CommandLineInput in = new CommandLineInput();
