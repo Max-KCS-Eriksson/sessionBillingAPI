@@ -3,6 +3,7 @@ package com.maxeriksson.SessionBillingAPI.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -181,6 +182,29 @@ class CustomerControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"address\":\"Updated Street\"}"))
                 .andExpect(status().isNotFound());
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+    }
+
+    @Test
+    void deleteReturnsNoContentWhenCustomerExists() throws Exception {
+        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+        Customer existingCustomer = new Customer(id, "Ada", "Lovelace", "Example Street");
+
+        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+                .thenReturn(Optional.of(existingCustomer));
+
+        mockMvc.perform(delete("/customers/19900102-0123")).andExpect(status().isNoContent());
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).delete(existingCustomer);
+    }
+
+    @Test
+    void deleteReturnsNotFoundWhenCustomerDoesNotExist() throws Exception {
+        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/customers/19900102-0123")).andExpect(status().isNotFound());
 
         verify(customerRepository).findById(any(SocialSecurityNumber.class));
     }
