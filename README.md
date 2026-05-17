@@ -28,7 +28,8 @@ incrementally without removing the working prototype flow too early.
 - MySQL-backed persistence configuration.
 - Optional CLI workflow for registry operations.
 - REST endpoints for listing customers, services, and billing records.
-- REST create, replace, and patch operations for customers and services.
+- REST create, replace, patch, and delete operations for customers and services.
+- REST create, replace, patch, and delete operations for billing records.
 - Controller tests covering the current REST surface.
 
 ## Current REST Surface
@@ -42,12 +43,15 @@ Available endpoints include:
 - `POST /customers`
 - `PUT /customers/{customerIdentifier}`
 - `PATCH /customers/{customerIdentifier}`
+- `DELETE /customers/{customerIdentifier}`
 - `GET /services`
 - `GET /services/{name}`
 - `POST /services`
 - `PUT /services/{name}`
 - `PATCH /services/{name}`
+- `DELETE /services/{name}`
 - `GET /bills`
+- `DELETE /bills/{customerIdentifier}/{bookedTime}`
 
 The billing workflow is still modeled with the legacy `Bill` concept. Future
 iterations are expected to move toward bookings, completed sessions, invoices,
