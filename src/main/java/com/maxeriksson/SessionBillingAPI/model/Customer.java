@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 @Table(name = "customers")
 public class Customer {
 
-    @EmbeddedId private SocialSecurityNumber socialSecurityNumber;
+    @EmbeddedId private PersonalId personalId;
 
     @Column(name = "firstName")
     private String firstName;
@@ -24,22 +24,22 @@ public class Customer {
     public Customer() {} // Required by JPA
 
     public Customer(
-            SocialSecurityNumber socialSecurityNumber,
+            PersonalId personalId,
             String firstName,
             String lastName,
             String address) {
-        this.socialSecurityNumber = socialSecurityNumber;
+        this.personalId = personalId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
     }
 
-    public SocialSecurityNumber getSocialSecurityNumber() {
-        return socialSecurityNumber;
+    public PersonalId getPersonalId() {
+        return personalId;
     }
 
-    public void setSocialSecurityNumber(SocialSecurityNumber socialSecurityNumber) {
-        this.socialSecurityNumber = socialSecurityNumber;
+    public void setPersonalId(PersonalId personalId) {
+        this.personalId = personalId;
     }
 
     public String getFirstName() {
@@ -69,7 +69,7 @@ public class Customer {
     @Override
     public String toString() {
         return "Customer [id="
-                + socialSecurityNumber
+                + personalId
                 + ", "
                 + firstName
                 + " "
@@ -85,7 +85,7 @@ public class Customer {
         int result = 1;
         result =
                 prime * result
-                        + ((socialSecurityNumber == null) ? 0 : socialSecurityNumber.hashCode());
+                        + ((personalId == null) ? 0 : personalId.hashCode());
         return result;
     }
 
@@ -95,9 +95,9 @@ public class Customer {
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
         Customer other = (Customer) obj;
-        if (socialSecurityNumber == null) {
-            if (other.socialSecurityNumber != null) return false;
-        } else if (!socialSecurityNumber.equals(other.socialSecurityNumber)) return false;
+        if (personalId == null) {
+            if (other.personalId != null) return false;
+        } else if (!personalId.equals(other.personalId)) return false;
         return true;
     }
 }

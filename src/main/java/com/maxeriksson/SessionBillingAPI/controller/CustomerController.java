@@ -1,7 +1,7 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import com.maxeriksson.SessionBillingAPI.model.Customer;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.PersonalId;
 import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 
 import org.springframework.http.HttpStatus;
@@ -47,14 +47,14 @@ public class CustomerController {
     }
 
     /**
-     * Finds one customer by social security number.
+     * Finds one customer by personal id.
      *
-     * @param socialSecurityNumber customer identifier from request path
+     * @param personalId customer identifier from request path
      * @return matching customer or 404
      */
-    @GetMapping("/{socialSecurityNumber}")
-    public ResponseEntity<Customer> findBySocialSecurityNumber(@PathVariable String socialSecurityNumber) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+    @GetMapping("/{personalId}")
+    public ResponseEntity<Customer> findByPersonalId(@PathVariable String personalId) {
+        PersonalId id = toPersonalId(personalId);
         return customerRepository
                 .findById(id)
                 .map(ResponseEntity::ok)
@@ -63,15 +63,15 @@ public class CustomerController {
 
     @PostMapping
     public ResponseEntity<Customer> create(@RequestBody CustomerCreateRequest request) {
-        SocialSecurityNumber socialSecurityNumber =
-                new SocialSecurityNumber(request.dateOfBirth(), request.idLastFour());
-        if (customerRepository.existsById(socialSecurityNumber)) {
+        PersonalId personalId =
+                new PersonalId(request.dateOfBirth(), request.idLastFour());
+        if (customerRepository.existsById(personalId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Customer already exists");
         }
 
         Customer createdCustomer =
                 new Customer(
-                        socialSecurityNumber,
+                        personalId,
                         request.firstName(),
                         request.lastName(),
                         request.address());
@@ -79,10 +79,10 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(customerRepository.save(createdCustomer));
     }
 
-    @PutMapping("/{socialSecurityNumber}")
+    @PutMapping("/{personalId}")
     public ResponseEntity<Customer> replace(
-            @PathVariable String socialSecurityNumber, @RequestBody CustomerReplaceRequest request) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+            @PathVariable String personalId, @RequestBody CustomerReplaceRequest request) {
+        PersonalId id = toPersonalId(personalId);
 
         Customer existingCustomer =
                 customerRepository
@@ -96,10 +96,10 @@ public class CustomerController {
         return ResponseEntity.ok(customerRepository.save(existingCustomer));
     }
 
-    @PatchMapping("/{socialSecurityNumber}")
+    @PatchMapping("/{personalId}")
     public ResponseEntity<Customer> patch(
-            @PathVariable String socialSecurityNumber, @RequestBody CustomerPatchRequest request) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+            @PathVariable String personalId, @RequestBody CustomerPatchRequest request) {
+        PersonalId id = toPersonalId(personalId);
 
         Customer existingCustomer =
                 customerRepository
@@ -122,12 +122,12 @@ public class CustomerController {
     /**
      * Deletes an existing customer record.
      *
-     * @param socialSecurityNumber customer identifier from the request path
+     * @param personalId customer identifier from the request path
      * @return no content when the customer is removed
      */
-    @DeleteMapping("/{socialSecurityNumber}")
-    public ResponseEntity<Void> delete(@PathVariable String socialSecurityNumber) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+    @DeleteMapping("/{personalId}")
+    public ResponseEntity<Void> delete(@PathVariable String personalId) {
+        PersonalId id = toPersonalId(personalId);
 
         Customer existingCustomer =
                 customerRepository
@@ -138,10 +138,10 @@ public class CustomerController {
         return ResponseEntity.noContent().build();
     }
 
-    private SocialSecurityNumber toSocialSecurityNumber(String socialSecurityNumber) {
-        String[] parts = socialSecurityNumber.split("-");
+    private PersonalId toPersonalId(String personalId) {
+        String[] parts = personalId.split("-");
         if (parts.length != 2 || parts[0].length() != 8 || parts[1].length() != 4) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
         }
 
         try {
@@ -151,9 +151,9 @@ public class CustomerController {
                             Integer.parseInt(parts[0].substring(4, 6)),
                             Integer.parseInt(parts[0].substring(6, 8)));
             Integer idLastFour = Integer.parseInt(parts[1]);
-            return new SocialSecurityNumber(dateOfBirth, idLastFour);
+            return new PersonalId(dateOfBirth, idLastFour);
         } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
         }
     }
 

@@ -15,7 +15,7 @@ import com.maxeriksson.SessionBillingAPI.model.Bill;
 import com.maxeriksson.SessionBillingAPI.model.BillId;
 import com.maxeriksson.SessionBillingAPI.model.Customer;
 import com.maxeriksson.SessionBillingAPI.model.Service;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.PersonalId;
 import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
 import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
@@ -46,7 +46,7 @@ class BillControllerTest {
     void findAllReturnsBills() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -73,7 +73,7 @@ class BillControllerTest {
     void createReturnsCreatedWhenBillDoesNotExist() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -81,7 +81,7 @@ class BillControllerTest {
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
         Bill bill = new Bill(id, service, 2, false);
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(serviceRepository.findById("Coaching")).thenReturn(Optional.of(service));
         when(billRepository.existsById(any(BillId.class))).thenReturn(false);
@@ -91,7 +91,7 @@ class BillControllerTest {
                         post("/bills")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
-                                        "{\"customerSocialSecurityNumber\":\"19900102-0123\",\"bookedTime\":\"2026-01-01T10:00:00\",\"serviceName\":\"Coaching\",\"hours\":2,\"paid\":false}"))
+                                        "{\"customerPersonalId\":\"19900102-0123\",\"bookedTime\":\"2026-01-01T10:00:00\",\"serviceName\":\"Coaching\",\"hours\":2,\"paid\":false}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id.customer.firstName").value("Ada"))
                 .andExpect(jsonPath("$.id.bookedTime").value("2026-01-01T10:00:00"))
@@ -99,7 +99,7 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(2))
                 .andExpect(jsonPath("$.paid").value(false));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(serviceRepository).findById("Coaching");
         verify(billRepository).existsById(any(BillId.class));
         verify(billRepository).save(any(Bill.class));
@@ -109,12 +109,12 @@ class BillControllerTest {
     void createReturnsConflictWhenBillAlreadyExists() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(serviceRepository.findById("Coaching"))
                 .thenReturn(Optional.of(new Service("Coaching", 500)));
@@ -124,10 +124,10 @@ class BillControllerTest {
                         post("/bills")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
-                                        "{\"customerSocialSecurityNumber\":\"19900102-0123\",\"bookedTime\":\"2026-01-01T10:00:00\",\"serviceName\":\"Coaching\",\"hours\":2,\"paid\":false}"))
+                                        "{\"customerPersonalId\":\"19900102-0123\",\"bookedTime\":\"2026-01-01T10:00:00\",\"serviceName\":\"Coaching\",\"hours\":2,\"paid\":false}"))
                 .andExpect(status().isConflict());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(serviceRepository).findById("Coaching");
         verify(billRepository).existsById(any(BillId.class));
     }
@@ -136,7 +136,7 @@ class BillControllerTest {
     void replaceReturnsOkWhenBillExists() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -145,7 +145,7 @@ class BillControllerTest {
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
         Bill existingBill = new Bill(id, existingService, 2, false);
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
         when(serviceRepository.findById("Advanced")).thenReturn(Optional.of(replacementService));
@@ -161,7 +161,7 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(4))
                 .andExpect(jsonPath("$.paid").value(true));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
         verify(serviceRepository).findById("Advanced");
         verify(billRepository).save(any(Bill.class));
@@ -171,12 +171,12 @@ class BillControllerTest {
     void replaceReturnsNotFoundWhenBillDoesNotExist() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
 
@@ -186,7 +186,7 @@ class BillControllerTest {
                                 .content("{\"serviceName\":\"Advanced\",\"hours\":4,\"paid\":true}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
     }
 
@@ -194,7 +194,7 @@ class BillControllerTest {
     void patchReturnsOkWhenBillExists() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -202,7 +202,7 @@ class BillControllerTest {
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
         Bill existingBill = new Bill(id, service, 2, false);
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
         when(billRepository.save(any(Bill.class))).thenReturn(new Bill(id, service, 3, true));
@@ -215,7 +215,7 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(3))
                 .andExpect(jsonPath("$.paid").value(true));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
         verify(billRepository).save(any(Bill.class));
     }
@@ -224,12 +224,12 @@ class BillControllerTest {
     void patchReturnsNotFoundWhenBillDoesNotExist() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
 
@@ -239,7 +239,7 @@ class BillControllerTest {
                                 .content("{\"hours\":3,\"paid\":true}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
     }
 
@@ -247,21 +247,21 @@ class BillControllerTest {
     void deleteReturnsNoContentWhenBillExists() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
         Bill existingBill = new Bill(id, new Service("Coaching", 500), 2, false);
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
 
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNoContent());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
         verify(billRepository).delete(existingBill);
     }
@@ -270,19 +270,19 @@ class BillControllerTest {
     void deleteReturnsNotFoundWhenBillDoesNotExist() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(billRepository).findById(any(BillId.class));
     }
 }

@@ -51,7 +51,7 @@ public class BillId implements Serializable {
     @Override
     public String toString() {
         return "BillId [customer="
-                + customer.getSocialSecurityNumber()
+                + customer.getPersonalId()
                 + ", bookedTime="
                 + bookedTime
                 + "]";

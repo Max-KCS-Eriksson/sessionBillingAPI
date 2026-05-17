@@ -75,7 +75,7 @@ public class Bill {
     @Override
     public String toString() {
         return "Bill [customer="
-                + id.getCustomer().getSocialSecurityNumber()
+                + id.getCustomer().getPersonalId()
                 + ", booking="
                 + id.getBookedTime()
                 + ", service="

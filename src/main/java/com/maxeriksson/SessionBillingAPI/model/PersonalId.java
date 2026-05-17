@@ -6,9 +6,9 @@ import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.time.LocalDate;
 
-/** SocialSecurityNumber */
+/** PersonalId */
 @Embeddable
-public class SocialSecurityNumber implements Serializable {
+public class PersonalId implements Serializable {
 
     @Column(name = "dateOfBirth")
     private LocalDate dateOfBirth;
@@ -16,9 +16,9 @@ public class SocialSecurityNumber implements Serializable {
     @Column(name = "idLastFour")
     private String idLastFour;
 
-    public SocialSecurityNumber() {} // Required by JPA
+    public PersonalId() {} // Required by JPA
 
-    public SocialSecurityNumber(LocalDate dateOfBirth, Integer idLastFour) {
+    public PersonalId(LocalDate dateOfBirth, Integer idLastFour) {
         this.dateOfBirth = dateOfBirth;
         setIdLastFour(idLastFour);
     }
@@ -61,7 +61,7 @@ public class SocialSecurityNumber implements Serializable {
         if (this == obj) return true;
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
-        SocialSecurityNumber other = (SocialSecurityNumber) obj;
+        PersonalId other = (PersonalId) obj;
         if (dateOfBirth == null) {
             if (other.dateOfBirth != null) return false;
         } else if (!dateOfBirth.equals(other.dateOfBirth)) return false;
