@@ -4,7 +4,7 @@ import com.maxeriksson.SessionBillingAPI.model.Bill;
 import com.maxeriksson.SessionBillingAPI.model.BillId;
 import com.maxeriksson.SessionBillingAPI.model.Customer;
 import com.maxeriksson.SessionBillingAPI.model.Service;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.PersonalId;
 import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
 import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
@@ -70,7 +70,7 @@ public class BillController {
      */
     @PostMapping
     public ResponseEntity<Bill> create(@RequestBody BillCreateRequest request) {
-        Customer customer = findCustomer(request.customerSocialSecurityNumber());
+        Customer customer = findCustomer(request.customerPersonalId());
         Service service = findService(request.serviceName());
         BillId id = new BillId(customer, request.bookedTime());
 
@@ -85,17 +85,17 @@ public class BillController {
     /**
      * Fully replaces an existing bill using strict PUT semantics.
      *
-     * @param customerSocialSecurityNumber customer identifier from the request path
+     * @param customerPersonalId customer identifier from the request path
      * @param bookedTime bill timestamp from the request path
      * @param request replacement payload
      * @return the replaced bill
      */
-    @PutMapping("/{customerSocialSecurityNumber}/{bookedTime}")
+    @PutMapping("/{customerPersonalId}/{bookedTime}")
     public ResponseEntity<Bill> replace(
-            @PathVariable String customerSocialSecurityNumber,
+            @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime,
             @RequestBody BillReplaceRequest request) {
-        BillId id = toBillId(customerSocialSecurityNumber, bookedTime);
+        BillId id = toBillId(customerPersonalId, bookedTime);
 
         Bill existingBill =
                 billRepository
@@ -112,17 +112,17 @@ public class BillController {
     /**
      * Partially updates an existing bill.
      *
-     * @param customerSocialSecurityNumber customer identifier from the request path
+     * @param customerPersonalId customer identifier from the request path
      * @param bookedTime bill timestamp from the request path
      * @param request patch payload
      * @return the updated bill
      */
-    @PatchMapping("/{customerSocialSecurityNumber}/{bookedTime}")
+    @PatchMapping("/{customerPersonalId}/{bookedTime}")
     public ResponseEntity<Bill> patch(
-            @PathVariable String customerSocialSecurityNumber,
+            @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime,
             @RequestBody BillPatchRequest request) {
-        BillId id = toBillId(customerSocialSecurityNumber, bookedTime);
+        BillId id = toBillId(customerPersonalId, bookedTime);
 
         Bill existingBill =
                 billRepository
@@ -145,15 +145,15 @@ public class BillController {
     /**
      * Deletes an existing bill record.
      *
-     * @param customerSocialSecurityNumber customer identifier from the request path
+     * @param customerPersonalId customer identifier from the request path
      * @param bookedTime bill timestamp from the request path
      * @return no content when the bill is removed
      */
-    @DeleteMapping("/{customerSocialSecurityNumber}/{bookedTime}")
+    @DeleteMapping("/{customerPersonalId}/{bookedTime}")
     public ResponseEntity<Void> delete(
-            @PathVariable String customerSocialSecurityNumber,
+            @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime) {
-        BillId id = toBillId(customerSocialSecurityNumber, bookedTime);
+        BillId id = toBillId(customerPersonalId, bookedTime);
 
         Bill existingBill =
                 billRepository
@@ -167,14 +167,14 @@ public class BillController {
     /**
      * Request payload for creating a bill.
      *
-     * @param customerSocialSecurityNumber customer identifier for the bill
+     * @param customerPersonalId customer identifier for the bill
      * @param bookedTime bill timestamp
      * @param serviceName service assigned to the bill
      * @param hours billed number of hours
      * @param paid payment status
      */
     public record BillCreateRequest(
-            String customerSocialSecurityNumber,
+            String customerPersonalId,
             LocalDateTime bookedTime,
             String serviceName,
             int hours,
@@ -199,13 +199,13 @@ public class BillController {
     public record BillPatchRequest(String serviceName, Integer hours, Boolean paid) {}
 
     /**
-     * Resolves a customer by social security number.
+     * Resolves a customer by personal id.
      *
-     * @param socialSecurityNumber customer identifier from the request
+     * @param personalId customer identifier from the request
      * @return matching customer record
      */
-    private Customer findCustomer(String socialSecurityNumber) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+    private Customer findCustomer(String personalId) {
+        PersonalId id = toPersonalId(personalId);
         return customerRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
@@ -226,24 +226,24 @@ public class BillController {
     /**
      * Builds a bill id from the path parameters.
      *
-     * @param customerSocialSecurityNumber customer identifier from the request path
+     * @param customerPersonalId customer identifier from the request path
      * @param bookedTime bill timestamp from the request path
      * @return resolved bill identifier
      */
-    private BillId toBillId(String customerSocialSecurityNumber, LocalDateTime bookedTime) {
-        return new BillId(findCustomer(customerSocialSecurityNumber), bookedTime);
+    private BillId toBillId(String customerPersonalId, LocalDateTime bookedTime) {
+        return new BillId(findCustomer(customerPersonalId), bookedTime);
     }
 
     /**
-     * Parses the legacy social security number format used by the prototype.
+     * Parses the legacy personal id format used by the prototype.
      *
-     * @param socialSecurityNumber customer identifier from the request
+     * @param personalId customer identifier from the request
      * @return parsed identifier value object
      */
-    private SocialSecurityNumber toSocialSecurityNumber(String socialSecurityNumber) {
-        String[] parts = socialSecurityNumber.split("-");
+    private PersonalId toPersonalId(String personalId) {
+        String[] parts = personalId.split("-");
         if (parts.length != 2 || parts[0].length() != 8 || parts[1].length() != 4) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
         }
 
         try {
@@ -253,9 +253,9 @@ public class BillController {
                             Integer.parseInt(parts[0].substring(4, 6)),
                             Integer.parseInt(parts[0].substring(6, 8)));
             Integer idLastFour = Integer.parseInt(parts[1]);
-            return new SocialSecurityNumber(dateOfBirth, idLastFour);
+            return new PersonalId(dateOfBirth, idLastFour);
         } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
         }
     }
 }

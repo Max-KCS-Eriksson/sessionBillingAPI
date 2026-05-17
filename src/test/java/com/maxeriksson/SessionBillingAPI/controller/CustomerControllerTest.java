@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.maxeriksson.SessionBillingAPI.model.Customer;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.PersonalId;
 import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class CustomerControllerTest {
     void findAllReturnsCustomers() throws Exception {
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -46,8 +46,8 @@ class CustomerControllerTest {
 
         mockMvc.perform(get("/customers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].socialSecurityNumber.dateOfBirth").value("1990-01-02"))
-                .andExpect(jsonPath("$[0].socialSecurityNumber.idLastFour").value("0123"))
+                .andExpect(jsonPath("$[0].personalId.dateOfBirth").value("1990-01-02"))
+                .andExpect(jsonPath("$[0].personalId.idLastFour").value("0123"))
                 .andExpect(jsonPath("$[0].firstName").value("Ada"))
                 .andExpect(jsonPath("$[0].lastName").value("Lovelace"))
                 .andExpect(jsonPath("$[0].address").value("Example Street"));
@@ -58,38 +58,38 @@ class CustomerControllerTest {
     
 
     @Test
-    void findBySocialSecurityNumberReturnsCustomer() throws Exception {
-        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+    void findByPersonalIdReturnsCustomer() throws Exception {
+        PersonalId id = new PersonalId(LocalDate.of(1990, 1, 2), 123);
         Customer customer = new Customer(id, "Ada", "Lovelace", "Example Street");
-        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.of(customer));
+        when(customerRepository.findById(any(PersonalId.class))).thenReturn(Optional.of(customer));
 
         mockMvc.perform(get("/customers/19900102-0123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.socialSecurityNumber.dateOfBirth").value("1990-01-02"))
-                .andExpect(jsonPath("$.socialSecurityNumber.idLastFour").value("0123"));
+                .andExpect(jsonPath("$.personalId.dateOfBirth").value("1990-01-02"))
+                .andExpect(jsonPath("$.personalId.idLastFour").value("0123"));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
     }
 
     @Test
-    void findBySocialSecurityNumberReturnsNotFound() throws Exception {
-        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+    void findByPersonalIdReturnsNotFound() throws Exception {
+        when(customerRepository.findById(any(PersonalId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/customers/19900102-0123")).andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
     }
 
     @Test
-    void findBySocialSecurityNumberReturnsBadRequestForInvalidFormat() throws Exception {
+    void findByPersonalIdReturnsBadRequestForInvalidFormat() throws Exception {
         mockMvc.perform(get("/customers/invalid")).andExpect(status().isBadRequest());
     }
 @Test
     void createReturnsCreatedWhenCustomerDoesNotExist() throws Exception {
-        when(customerRepository.existsById(any(SocialSecurityNumber.class))).thenReturn(false);
+        when(customerRepository.existsById(any(PersonalId.class))).thenReturn(false);
         Customer customer =
                 new Customer(
-                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
                         "Ada",
                         "Lovelace",
                         "Example Street");
@@ -100,16 +100,16 @@ class CustomerControllerTest {
                         .content(
                                 "{\"dateOfBirth\":\"1990-01-02\",\"idLastFour\":123,\"firstName\":\"Ada\",\"lastName\":\"Lovelace\",\"address\":\"Example Street\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.socialSecurityNumber.dateOfBirth").value("1990-01-02"))
-                .andExpect(jsonPath("$.socialSecurityNumber.idLastFour").value("0123"));
+                .andExpect(jsonPath("$.personalId.dateOfBirth").value("1990-01-02"))
+                .andExpect(jsonPath("$.personalId.idLastFour").value("0123"));
 
-        verify(customerRepository).existsById(any(SocialSecurityNumber.class));
+        verify(customerRepository).existsById(any(PersonalId.class));
         verify(customerRepository).save(any(Customer.class));
     }
 
     @Test
     void createReturnsConflictWhenCustomerExists() throws Exception {
-        when(customerRepository.existsById(any(SocialSecurityNumber.class))).thenReturn(true);
+        when(customerRepository.existsById(any(PersonalId.class))).thenReturn(true);
 
         mockMvc.perform(post("/customers")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -117,15 +117,15 @@ class CustomerControllerTest {
                                 "{\"dateOfBirth\":\"1990-01-02\",\"idLastFour\":123,\"firstName\":\"Ada\",\"lastName\":\"Lovelace\",\"address\":\"Example Street\"}"))
                 .andExpect(status().isConflict());
 
-        verify(customerRepository).existsById(any(SocialSecurityNumber.class));
+        verify(customerRepository).existsById(any(PersonalId.class));
     }
 
     @Test
     void replaceReturnsOkWhenCustomerExists() throws Exception {
-        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+        PersonalId id = new PersonalId(LocalDate.of(1990, 1, 2), 123);
         Customer existingCustomer = new Customer(id, "Ada", "Lovelace", "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(existingCustomer));
         when(customerRepository.save(any(Customer.class)))
                 .thenReturn(new Customer(id, "Grace", "Hopper", "Navy Street"));
@@ -138,28 +138,28 @@ class CustomerControllerTest {
                 .andExpect(jsonPath("$.lastName").value("Hopper"))
                 .andExpect(jsonPath("$.address").value("Navy Street"));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(customerRepository).save(any(Customer.class));
     }
 
     @Test
     void replaceReturnsNotFoundWhenCustomerDoesNotExist() throws Exception {
-        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+        when(customerRepository.findById(any(PersonalId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/customers/19900102-0123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"firstName\":\"Grace\",\"lastName\":\"Hopper\",\"address\":\"Navy Street\"}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
     }
 
     @Test
     void patchReturnsOkWhenCustomerExists() throws Exception {
-        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+        PersonalId id = new PersonalId(LocalDate.of(1990, 1, 2), 123);
         Customer existingCustomer = new Customer(id, "Ada", "Lovelace", "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(existingCustomer));
         when(customerRepository.save(any(Customer.class)))
                 .thenReturn(new Customer(id, "Ada", "Lovelace", "Updated Street"));
@@ -170,42 +170,42 @@ class CustomerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.address").value("Updated Street"));
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(customerRepository).save(any(Customer.class));
     }
 
     @Test
     void patchReturnsNotFoundWhenCustomerDoesNotExist() throws Exception {
-        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+        when(customerRepository.findById(any(PersonalId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(patch("/customers/19900102-0123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"address\":\"Updated Street\"}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
     }
 
     @Test
     void deleteReturnsNoContentWhenCustomerExists() throws Exception {
-        SocialSecurityNumber id = new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123);
+        PersonalId id = new PersonalId(LocalDate.of(1990, 1, 2), 123);
         Customer existingCustomer = new Customer(id, "Ada", "Lovelace", "Example Street");
 
-        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+        when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(existingCustomer));
 
         mockMvc.perform(delete("/customers/19900102-0123")).andExpect(status().isNoContent());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
         verify(customerRepository).delete(existingCustomer);
     }
 
     @Test
     void deleteReturnsNotFoundWhenCustomerDoesNotExist() throws Exception {
-        when(customerRepository.findById(any(SocialSecurityNumber.class))).thenReturn(Optional.empty());
+        when(customerRepository.findById(any(PersonalId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/customers/19900102-0123")).andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(customerRepository).findById(any(PersonalId.class));
     }
 }

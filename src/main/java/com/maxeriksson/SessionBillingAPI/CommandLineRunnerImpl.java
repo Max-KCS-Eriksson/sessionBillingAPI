@@ -4,7 +4,7 @@ import com.maxeriksson.SessionBillingAPI.model.Bill;
 import com.maxeriksson.SessionBillingAPI.model.BillId;
 import com.maxeriksson.SessionBillingAPI.model.Customer;
 import com.maxeriksson.SessionBillingAPI.model.Service;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.model.PersonalId;
 import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
 import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
@@ -248,11 +248,11 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
 
         boolean isUniqueId = false;
         while (!isUniqueId) {
-            SocialSecurityNumber customerId;
+            PersonalId customerId;
             try {
                 System.out.println("Enter Customers details:");
                 boolean isNonExistingAllowed = true;
-                customerId = createExistingSocialSecurityNumber(isNonExistingAllowed).get();
+                customerId = createExistingPersonalId(isNonExistingAllowed).get();
             } catch (NoSuchElementException e) {
                 return Optional.empty();
             }
@@ -281,10 +281,10 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
 
         boolean isUniqueId = false;
         while (!isUniqueId) {
-            SocialSecurityNumber customerId;
+            PersonalId customerId;
             try {
                 System.out.println("Enter Customers details:");
-                customerId = createExistingSocialSecurityNumber().get();
+                customerId = createExistingPersonalId().get();
             } catch (NoSuchElementException e) {
                 return Optional.empty();
             }
@@ -308,16 +308,16 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
     // Handle Customers
 
     private Optional<Customer> createCustomer() {
-        SocialSecurityNumber socialSecurityNumber;
+        PersonalId personalId;
         try {
-            socialSecurityNumber = createUniqueSocialSecurityNumber().get();
-            return createCustomer(socialSecurityNumber);
+            personalId = createUniquePersonalId().get();
+            return createCustomer(personalId);
         } catch (NoSuchElementException e) {
             return Optional.empty();
         }
     }
 
-    private Optional<Customer> createCustomer(SocialSecurityNumber socialSecurityNumber) {
+    private Optional<Customer> createCustomer(PersonalId personalId) {
         String firstName = toInitialUpperCase(in.inputString("First name"));
         String lastName = toInitialUpperCase(in.inputString("Last name"));
         String address = "";
@@ -325,35 +325,35 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
             address += toInitialUpperCase(word) + " ";
         }
 
-        return Optional.of(new Customer(socialSecurityNumber, firstName, lastName, address));
+        return Optional.of(new Customer(personalId, firstName, lastName, address));
     }
 
     private void deleteCustomer() {
-        Optional<SocialSecurityNumber> socialSecurityNumber = createExistingSocialSecurityNumber();
-        if (socialSecurityNumber.isEmpty()) {
+        Optional<PersonalId> personalId = createExistingPersonalId();
+        if (personalId.isEmpty()) {
             return;
         }
-        Optional<Customer> customer = customerRepository.findById(socialSecurityNumber.get());
+        Optional<Customer> customer = customerRepository.findById(personalId.get());
         if (customer.isPresent()) {
             System.out.println("Customer found in Registry:\n  " + customer.get());
             if (in.inputConfirmation("Delete"))
-                customerRepository.deleteById(socialSecurityNumber.get());
+                customerRepository.deleteById(personalId.get());
         }
     }
 
-    private Optional<SocialSecurityNumber> createUniqueSocialSecurityNumber() {
-        SocialSecurityNumber socialSecurityNumber = null;
+    private Optional<PersonalId> createUniquePersonalId() {
+        PersonalId personalId = null;
 
         boolean isUniqueId = false;
         while (!isUniqueId) {
             LocalDate dateOfBirth = createLocalDate();
-            int idLastFour = createSocialSecurityNumberLastFourDigit();
-            socialSecurityNumber = new SocialSecurityNumber(dateOfBirth, idLastFour);
+            int idLastFour = createPersonalIdLastFourDigit();
+            personalId = new PersonalId(dateOfBirth, idLastFour);
 
-            isUniqueId = !customerRepository.existsById(socialSecurityNumber);
+            isUniqueId = !customerRepository.existsById(personalId);
             if (!isUniqueId) {
                 System.out.println(
-                        "ID number already exists in the registry:\n  " + socialSecurityNumber);
+                        "ID number already exists in the registry:\n  " + personalId);
                 if (in.inputConfirmation("Update existing customer details?\n")) {
                     break;
                 } else {
@@ -361,38 +361,38 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
                 }
             }
         }
-        return Optional.of(socialSecurityNumber);
+        return Optional.of(personalId);
     }
 
-    private Optional<SocialSecurityNumber> createExistingSocialSecurityNumber() {
-        return createExistingSocialSecurityNumber(false);
+    private Optional<PersonalId> createExistingPersonalId() {
+        return createExistingPersonalId(false);
     }
 
-    private Optional<SocialSecurityNumber> createExistingSocialSecurityNumber(boolean orCreateNew) {
-        SocialSecurityNumber socialSecurityNumber = null;
+    private Optional<PersonalId> createExistingPersonalId(boolean orCreateNew) {
+        PersonalId personalId = null;
 
         boolean isUniqueId = false;
         while (!isUniqueId) {
             LocalDate dateOfBirth = createLocalDate();
-            int idLastFour = createSocialSecurityNumberLastFourDigit();
-            socialSecurityNumber = new SocialSecurityNumber(dateOfBirth, idLastFour);
+            int idLastFour = createPersonalIdLastFourDigit();
+            personalId = new PersonalId(dateOfBirth, idLastFour);
 
-            isUniqueId = customerRepository.existsById(socialSecurityNumber);
+            isUniqueId = customerRepository.existsById(personalId);
             if (!isUniqueId) {
                 System.out.println(
-                        "ID number doesn't exists in the registry:\n  " + socialSecurityNumber);
+                        "ID number doesn't exists in the registry:\n  " + personalId);
                 if (orCreateNew && in.inputConfirmation("Register Customer?\n")) {
-                    Optional<Customer> customer = createCustomer(socialSecurityNumber);
+                    Optional<Customer> customer = createCustomer(personalId);
                     if (customer.isPresent()) {
                         customerRepository.save(customer.get());
-                        return Optional.of(customer.get().getSocialSecurityNumber());
+                        return Optional.of(customer.get().getPersonalId());
                     }
                 } else if (!in.inputConfirmation("Try again?\n")) {
                     return Optional.empty();
                 }
             }
         }
-        return Optional.of(socialSecurityNumber);
+        return Optional.of(personalId);
     }
 
     private LocalDate createLocalDate() {
@@ -434,7 +434,7 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
         return time;
     }
 
-    private int createSocialSecurityNumberLastFourDigit() {
+    private int createPersonalIdLastFourDigit() {
         int idLastFour = -1;
         while (idLastFour < 0 || idLastFour > 9999) {
             idLastFour = in.inputInt("ID last four");
