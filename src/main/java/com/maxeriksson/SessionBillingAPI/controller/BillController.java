@@ -1,17 +1,18 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import com.maxeriksson.SessionBillingAPI.model.Bill;
-import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
-import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
-import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 import com.maxeriksson.SessionBillingAPI.model.BillId;
 import com.maxeriksson.SessionBillingAPI.model.Customer;
 import com.maxeriksson.SessionBillingAPI.model.Service;
 import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
+import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
+import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
+import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -139,6 +140,28 @@ public class BillController {
         }
 
         return ResponseEntity.ok(billRepository.save(existingBill));
+    }
+
+    /**
+     * Deletes an existing bill record.
+     *
+     * @param customerSocialSecurityNumber customer identifier from the request path
+     * @param bookedTime bill timestamp from the request path
+     * @return no content when the bill is removed
+     */
+    @DeleteMapping("/{customerSocialSecurityNumber}/{bookedTime}")
+    public ResponseEntity<Void> delete(
+            @PathVariable String customerSocialSecurityNumber,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime) {
+        BillId id = toBillId(customerSocialSecurityNumber, bookedTime);
+
+        Bill existingBill =
+                billRepository
+                        .findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        billRepository.delete(existingBill);
+        return ResponseEntity.noContent().build();
     }
 
     /**

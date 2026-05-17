@@ -7,6 +7,7 @@ import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -116,6 +117,25 @@ public class CustomerController {
         }
 
         return ResponseEntity.ok(customerRepository.save(existingCustomer));
+    }
+
+    /**
+     * Deletes an existing customer record.
+     *
+     * @param socialSecurityNumber customer identifier from the request path
+     * @return no content when the customer is removed
+     */
+    @DeleteMapping("/{socialSecurityNumber}")
+    public ResponseEntity<Void> delete(@PathVariable String socialSecurityNumber) {
+        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
+
+        Customer existingCustomer =
+                customerRepository
+                        .findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        customerRepository.delete(existingCustomer);
+        return ResponseEntity.noContent().build();
     }
 
     private SocialSecurityNumber toSocialSecurityNumber(String socialSecurityNumber) {

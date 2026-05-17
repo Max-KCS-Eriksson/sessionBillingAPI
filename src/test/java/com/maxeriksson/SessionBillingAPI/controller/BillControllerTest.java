@@ -1,10 +1,11 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -115,7 +116,8 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(SocialSecurityNumber.class)))
                 .thenReturn(Optional.of(customer));
-        when(serviceRepository.findById("Coaching")).thenReturn(Optional.of(new Service("Coaching", 500)));
+        when(serviceRepository.findById("Coaching"))
+                .thenReturn(Optional.of(new Service("Coaching", 500)));
         when(billRepository.existsById(any(BillId.class))).thenReturn(true);
 
         mockMvc.perform(
@@ -235,6 +237,49 @@ class BillControllerTest {
                         patch("/bills/19900102-0123/2026-01-01T10:00:00")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"hours\":3,\"paid\":true}"))
+                .andExpect(status().isNotFound());
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(billRepository).findById(any(BillId.class));
+    }
+
+    @Test
+    void deleteReturnsNoContentWhenBillExists() throws Exception {
+        Customer customer =
+                new Customer(
+                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        "Ada",
+                        "Lovelace",
+                        "Example Street");
+        BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
+        Bill existingBill = new Bill(id, new Service("Coaching", 500), 2, false);
+
+        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+                .thenReturn(Optional.of(customer));
+        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
+
+        mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
+                .andExpect(status().isNoContent());
+
+        verify(customerRepository).findById(any(SocialSecurityNumber.class));
+        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).delete(existingBill);
+    }
+
+    @Test
+    void deleteReturnsNotFoundWhenBillDoesNotExist() throws Exception {
+        Customer customer =
+                new Customer(
+                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        "Ada",
+                        "Lovelace",
+                        "Example Street");
+
+        when(customerRepository.findById(any(SocialSecurityNumber.class)))
+                .thenReturn(Optional.of(customer));
+        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNotFound());
 
         verify(customerRepository).findById(any(SocialSecurityNumber.class));

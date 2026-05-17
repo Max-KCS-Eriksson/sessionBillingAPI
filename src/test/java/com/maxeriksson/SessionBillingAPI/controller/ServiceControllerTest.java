@@ -3,6 +3,7 @@ package com.maxeriksson.SessionBillingAPI.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -147,6 +148,26 @@ class ServiceControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sekPerHour\":900}"))
                 .andExpect(status().isNotFound());
+
+        verify(serviceRepository).findById("Missing");
+    }
+
+    @Test
+    void deleteReturnsNoContentWhenServiceExists() throws Exception {
+        Service existingService = new Service("Coaching", 500);
+        when(serviceRepository.findById("Coaching")).thenReturn(Optional.of(existingService));
+
+        mockMvc.perform(delete("/services/Coaching")).andExpect(status().isNoContent());
+
+        verify(serviceRepository).findById("Coaching");
+        verify(serviceRepository).delete(existingService);
+    }
+
+    @Test
+    void deleteReturnsNotFoundWhenServiceDoesNotExist() throws Exception {
+        when(serviceRepository.findById("Missing")).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/services/Missing")).andExpect(status().isNotFound());
 
         verify(serviceRepository).findById("Missing");
     }

@@ -5,6 +5,7 @@ import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -111,6 +112,23 @@ public class ServiceController {
         existingService.setSekPerHour(request.sekPerHour());
 
         return ResponseEntity.ok(serviceRepository.save(existingService));
+    }
+
+    /**
+     * Deletes an existing service record.
+     *
+     * @param name service name from the request path
+     * @return no content when the service is removed
+     */
+    @DeleteMapping("/{name}")
+    public ResponseEntity<Void> delete(@PathVariable String name) {
+        Service existingService =
+                serviceRepository
+                        .findById(name)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        serviceRepository.delete(existingService);
+        return ResponseEntity.noContent().build();
     }
 
     /**
