@@ -1,7 +1,9 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,5 +58,35 @@ class BillControllerTest {
                 .andExpect(jsonPath("$[0].paid").value(false));
 
         verify(billRepository).findAll();
+    }
+
+    @Test
+    void deleteReturnsNoContentWhenBillExists() throws Exception {
+        Customer customer =
+                new Customer(
+                        new SocialSecurityNumber(LocalDate.of(1990, 1, 2), 123),
+                        "Ada",
+                        "Lovelace",
+                        "Example Street");
+        BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
+        Bill existingBill = new Bill(id, new Service("Coaching", 500), 2, false);
+
+        when(billRepository.findById(any(BillId.class))).thenReturn(java.util.Optional.of(existingBill));
+
+        mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
+                .andExpect(status().isNoContent());
+
+        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).delete(existingBill);
+    }
+
+    @Test
+    void deleteReturnsNotFoundWhenBillDoesNotExist() throws Exception {
+        when(billRepository.findById(any(BillId.class))).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
+                .andExpect(status().isNotFound());
+
+        verify(billRepository).findById(any(BillId.class));
     }
 }
