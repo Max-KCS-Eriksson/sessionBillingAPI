@@ -48,6 +48,9 @@ Available endpoints include:
 - `PUT /services/{name}`
 - `PATCH /services/{name}`
 - `GET /bills`
+- `POST /bills`
+- `PUT /bills/{customerIdentifier}/{bookedTime}`
+- `PATCH /bills/{customerIdentifier}/{bookedTime}`
 
 The billing workflow is still modeled with the legacy `Bill` concept. Future
 iterations are expected to move toward bookings, completed sessions, invoices,
