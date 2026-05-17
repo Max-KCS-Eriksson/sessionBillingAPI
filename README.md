@@ -51,6 +51,9 @@ Available endpoints include:
 - `PATCH /services/{name}`
 - `DELETE /services/{name}`
 - `GET /bills`
+- `POST /bills`
+- `PUT /bills/{customerIdentifier}/{bookedTime}`
+- `PATCH /bills/{customerIdentifier}/{bookedTime}`
 - `DELETE /bills/{customerIdentifier}/{bookedTime}`
 
 The billing workflow is still modeled with the legacy `Bill` concept. Future
