@@ -1,6 +1,7 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -16,9 +17,7 @@ import com.maxeriksson.SessionBillingAPI.model.BillId;
 import com.maxeriksson.SessionBillingAPI.model.Customer;
 import com.maxeriksson.SessionBillingAPI.model.Service;
 import com.maxeriksson.SessionBillingAPI.model.PersonalId;
-import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
-import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
-import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
+import com.maxeriksson.SessionBillingAPI.service.BillService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Unit tests for the bill registry REST controller. */
 @WebMvcTest(BillController.class)
@@ -38,9 +37,7 @@ class BillControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockBean private BillRepository billRepository;
-    @MockBean private CustomerRepository customerRepository;
-    @MockBean private ServiceRepository serviceRepository;
+    @MockBean private BillService billService;
 
     @Test
     void findAllReturnsBills() throws Exception {
@@ -56,7 +53,7 @@ class BillControllerTest {
                         new Service("Coaching", 500),
                         2,
                         false);
-        when(billRepository.findAll()).thenReturn(List.of(bill));
+        when(billService.findAll()).thenReturn(List.of(bill));
 
         mockMvc.perform(get("/bills"))
                 .andExpect(status().isOk())
@@ -66,26 +63,25 @@ class BillControllerTest {
                 .andExpect(jsonPath("$[0].hours").value(2))
                 .andExpect(jsonPath("$[0].paid").value(false));
 
-        verify(billRepository).findAll();
+        verify(billService).findAll();
     }
 
     @Test
     void createReturnsCreatedWhenBillDoesNotExist() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-        Service service = new Service("Coaching", 500);
-        BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
-        Bill bill = new Bill(id, service, 2, false);
+        Bill bill =
+                new Bill(
+                        new BillId(
+                                new Customer(
+                                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
+                                        "Ada",
+                                        "Lovelace",
+                                        "Example Street"),
+                                LocalDateTime.of(2026, 1, 1, 10, 0)),
+                        new Service("Coaching", 500),
+                        2,
+                        false);
 
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(serviceRepository.findById("Coaching")).thenReturn(Optional.of(service));
-        when(billRepository.existsById(any(BillId.class))).thenReturn(false);
-        when(billRepository.save(any(Bill.class))).thenReturn(bill);
+        when(billService.create(any(BillService.BillCreateRequest.class))).thenReturn(bill);
 
         mockMvc.perform(
                         post("/bills")
@@ -99,26 +95,14 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(2))
                 .andExpect(jsonPath("$.paid").value(false));
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(serviceRepository).findById("Coaching");
-        verify(billRepository).existsById(any(BillId.class));
-        verify(billRepository).save(any(Bill.class));
+        verify(billService).create(any(BillService.BillCreateRequest.class));
     }
 
     @Test
     void createReturnsConflictWhenBillAlreadyExists() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(serviceRepository.findById("Coaching"))
-                .thenReturn(Optional.of(new Service("Coaching", 500)));
-        when(billRepository.existsById(any(BillId.class))).thenReturn(true);
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "Bill already exists"))
+                .when(billService)
+                .create(any(BillService.BillCreateRequest.class));
 
         mockMvc.perform(
                         post("/bills")
@@ -127,9 +111,7 @@ class BillControllerTest {
                                         "{\"customerPersonalId\":\"19900102-0123\",\"bookedTime\":\"2026-01-01T10:00:00\",\"serviceName\":\"Coaching\",\"hours\":2,\"paid\":false}"))
                 .andExpect(status().isConflict());
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(serviceRepository).findById("Coaching");
-        verify(billRepository).existsById(any(BillId.class));
+        verify(billService).create(any(BillService.BillCreateRequest.class));
     }
 
     @Test
@@ -140,17 +122,15 @@ class BillControllerTest {
                         "Ada",
                         "Lovelace",
                         "Example Street");
-        Service existingService = new Service("Coaching", 500);
         Service replacementService = new Service("Advanced", 700);
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
-        Bill existingBill = new Bill(id, existingService, 2, false);
+        Bill updatedBill = new Bill(id, replacementService, 4, true);
 
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
-        when(serviceRepository.findById("Advanced")).thenReturn(Optional.of(replacementService));
-        when(billRepository.save(any(Bill.class)))
-                .thenReturn(new Bill(id, replacementService, 4, true));
+        when(billService.replace(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillReplaceRequest("Advanced", 4, true)))
+                .thenReturn(updatedBill);
 
         mockMvc.perform(
                         put("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -161,24 +141,21 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(4))
                 .andExpect(jsonPath("$.paid").value(true));
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
-        verify(serviceRepository).findById("Advanced");
-        verify(billRepository).save(any(Bill.class));
+        verify(billService)
+                .replace(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillReplaceRequest("Advanced", 4, true));
     }
 
     @Test
     void replaceReturnsNotFoundWhenBillDoesNotExist() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND))
+                .when(billService)
+                .replace(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillReplaceRequest("Advanced", 4, true));
 
         mockMvc.perform(
                         put("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -186,8 +163,11 @@ class BillControllerTest {
                                 .content("{\"serviceName\":\"Advanced\",\"hours\":4,\"paid\":true}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billService)
+                .replace(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillReplaceRequest("Advanced", 4, true));
     }
 
     @Test
@@ -200,12 +180,13 @@ class BillControllerTest {
                         "Example Street");
         Service service = new Service("Coaching", 500);
         BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
-        Bill existingBill = new Bill(id, service, 2, false);
+        Bill updatedBill = new Bill(id, service, 3, true);
 
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
-        when(billRepository.save(any(Bill.class))).thenReturn(new Bill(id, service, 3, true));
+        when(billService.patch(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillPatchRequest(null, 3, true)))
+                .thenReturn(updatedBill);
 
         mockMvc.perform(
                         patch("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -215,23 +196,21 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.hours").value(3))
                 .andExpect(jsonPath("$.paid").value(true));
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
-        verify(billRepository).save(any(Bill.class));
+        verify(billService)
+                .patch(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillPatchRequest(null, 3, true));
     }
 
     @Test
     void patchReturnsNotFoundWhenBillDoesNotExist() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND))
+                .when(billService)
+                .patch(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillPatchRequest(null, 3, true));
 
         mockMvc.perform(
                         patch("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -239,50 +218,30 @@ class BillControllerTest {
                                 .content("{\"hours\":3,\"paid\":true}"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billService)
+                .patch(
+                        "19900102-0123",
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        new BillService.BillPatchRequest(null, 3, true));
     }
 
     @Test
     void deleteReturnsNoContentWhenBillExists() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-        BillId id = new BillId(customer, LocalDateTime.of(2026, 1, 1, 10, 0));
-        Bill existingBill = new Bill(id, new Service("Coaching", 500), 2, false);
-
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
-
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNoContent());
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
-        verify(billRepository).delete(existingBill);
+        verify(billService).delete("19900102-0123", LocalDateTime.of(2026, 1, 1, 10, 0));
     }
 
     @Test
     void deleteReturnsNotFoundWhenBillDoesNotExist() throws Exception {
-        Customer customer =
-                new Customer(
-                        new PersonalId(LocalDate.of(1990, 1, 2), 123),
-                        "Ada",
-                        "Lovelace",
-                        "Example Street");
-
-        when(customerRepository.findById(any(PersonalId.class)))
-                .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND))
+                .when(billService)
+                .delete("19900102-0123", LocalDateTime.of(2026, 1, 1, 10, 0));
 
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNotFound());
 
-        verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billService).delete("19900102-0123", LocalDateTime.of(2026, 1, 1, 10, 0));
     }
 }
