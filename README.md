@@ -31,6 +31,7 @@ incrementally without removing the working prototype flow too early.
 - REST create, replace, patch, and delete operations for customers and services.
 - REST create, replace, patch, and delete operations for billing records.
 - REST create and version operations for service offerings.
+- REST create and version operations for session types.
 - Customer, service, and billing REST workflows now route through service layers.
 - Controller tests covering the current REST surface.
 
@@ -54,6 +55,8 @@ Available endpoints include:
 - `DELETE /services/{name}`
 - `POST /service-offerings`
 - `POST /service-offerings/{name}/versions`
+- `POST /session-types`
+- `POST /session-types/{name}/versions`
 - `GET /bills`
 - `POST /bills`
 - `PUT /bills/{customerIdentifier}/{bookedTime}`
