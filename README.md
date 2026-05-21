@@ -1,38 +1,37 @@
 # Session Billing API
 
-Prototype stage: Spring Boot CLI billing registry with partial REST API surface.
+REST-first Spring Boot API for session billing workflows.
 
-Session Billing API is an early backend prototype for tracking billable customer
-sessions, service rates, and billing records. The current codebase is not a
-finished invoicing platform. It is an initial CLI prototype that is being
-gradually migrated toward a REST-first Spring Boot API.
+Session Billing API is an early backend for tracking billable customer
+sessions, service rates, bookings, and invoices. The project started as a CLI
+prototype and now exposes the core workflow through REST endpoints.
 
 ## Current Stage
 
-This repository currently represents the initial prototype stage.
+This repository currently represents an active REST API migration stage.
 
-The implemented system is centered on a legacy command-line registry workflow
-for:
+The implemented system is centered on REST workflows for:
 
 - customers
 - services and hourly rates
-- billing records
-
-A partial REST API exists alongside the CLI so the project can evolve
-incrementally without removing the working prototype flow too early.
+- service offerings and versions
+- session types and versions
+- bookings
+- invoices
 
 ## What Works Today
 
 - Spring Boot application using Java 21.
-- JPA repositories for customer, service, and billing data.
+- JPA repositories for customer, service, booking, and invoice data.
 - MySQL-backed persistence configuration.
-- Optional CLI workflow for registry operations.
-- REST endpoints for listing customers, services, and billing records.
+- REST endpoints for listing customers, services, bookings, and invoices.
 - REST create, replace, patch, and delete operations for customers and services.
 - REST create, replace, patch, and delete operations for billing records.
 - REST create and version operations for service offerings.
 - REST create and version operations for session types.
 - REST create and status transition operations for bookings.
+- REST invoice generation from completed bookings.
+- REST delete protection for unpaid invoices.
 - Customer, service, and billing REST workflows now route through service layers.
 - Controller tests covering the current REST surface.
 
@@ -61,15 +60,8 @@ Available endpoints include:
 - `GET /bookings`
 - `POST /bookings`
 - `PATCH /bookings/{id}/status`
-- `GET /bills`
-- `POST /bills`
-- `PUT /bills/{customerIdentifier}/{bookedTime}`
-- `PATCH /bills/{customerIdentifier}/{bookedTime}`
-- `DELETE /bills/{customerIdentifier}/{bookedTime}`
-
-The billing workflow is still modeled with the legacy `Bill` concept. Future
-iterations are expected to move toward bookings, completed sessions, invoices,
-and duplicate-billing protection.
+- `GET /invoices`
+- `DELETE /invoices/{id}`
 
 ## Running Locally
 
@@ -85,13 +77,6 @@ Run the Spring Boot application:
 ./mvnw spring-boot:run
 ```
 
-The CLI runner is disabled by default. To start the legacy CLI prototype flow,
-enable it with:
-
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.arguments=--session-billing.cli.enabled=true
-```
-
 ## Testing
 
 Run the test suite with:
@@ -102,8 +87,8 @@ Run the test suite with:
 
 ## Project Direction
 
-The goal is to evolve this prototype into a focused Spring Boot REST API for a
-realistic billing workflow:
+The goal is to continue hardening this REST API for a realistic billing
+workflow:
 
 - manage customers
 - manage service offerings
