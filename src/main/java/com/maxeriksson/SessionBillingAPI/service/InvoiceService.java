@@ -6,17 +6,21 @@ import com.maxeriksson.SessionBillingAPI.domain.Invoice;
 import com.maxeriksson.SessionBillingAPI.domain.InvoiceStatus;
 import com.maxeriksson.SessionBillingAPI.repository.InvoiceRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 /**
- * Service-layer entry point for invoice generation.
+ * Service-layer entry point for invoice workflows.
  *
- * <p>The class creates one invoice for each completed booking and prevents duplicate invoices for
- * the same booking.
+ * <p>The class creates invoices from completed bookings and enforces the business rule that unpaid
+ * invoices cannot be deleted.
  */
 @org.springframework.stereotype.Service
 @Transactional
@@ -31,6 +35,27 @@ public class InvoiceService {
      */
     public InvoiceService(InvoiceRepository invoiceRepository) {
         this.invoiceRepository = invoiceRepository;
+    }
+
+    /**
+     * Lists all stored invoices.
+     *
+     * @return all invoices currently persisted
+     */
+    @Transactional(readOnly = true)
+    public List<Invoice> findAll() {
+        return invoiceRepository.findAll();
+    }
+
+    /**
+     * Looks up one invoice by id.
+     *
+     * @param id invoice identifier
+     * @return matching invoice if it exists
+     */
+    @Transactional(readOnly = true)
+    public Optional<Invoice> findById(Long id) {
+        return invoiceRepository.findById(id);
     }
 
     /**
@@ -62,6 +87,25 @@ public class InvoiceService {
                                                     .getCurrencyCode());
                             return invoiceRepository.save(invoice);
                         });
+    }
+
+    /**
+     * Deletes an invoice when it is not unpaid.
+     *
+     * @param id invoice identifier
+     */
+    public void delete(Long id) {
+        Invoice existingInvoice =
+                invoiceRepository
+                        .findById(id)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (existingInvoice.getStatus() == InvoiceStatus.UNPAID) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Unpaid invoices cannot be deleted");
+        }
+
+        invoiceRepository.delete(existingInvoice);
     }
 
     private BigDecimal calculateTotalAmount(Booking booking) {
