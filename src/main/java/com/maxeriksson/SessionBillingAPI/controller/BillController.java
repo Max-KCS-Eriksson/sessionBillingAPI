@@ -74,7 +74,7 @@ public class BillController {
         Service service = findService(request.serviceName());
         BillId id = new BillId(customer, request.bookedTime());
 
-        if (billRepository.existsById(id)) {
+        if (billRepository.existsByBillId(id)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bill already exists");
         }
 
@@ -99,7 +99,7 @@ public class BillController {
 
         Bill existingBill =
                 billRepository
-                        .findById(id)
+                        .findByBillId(id)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         existingBill.setService(findService(request.serviceName()));
@@ -126,7 +126,7 @@ public class BillController {
 
         Bill existingBill =
                 billRepository
-                        .findById(id)
+                        .findByBillId(id)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (request.serviceName() != null) {
@@ -157,7 +157,7 @@ public class BillController {
 
         Bill existingBill =
                 billRepository
-                        .findById(id)
+                        .findByBillId(id)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         billRepository.delete(existingBill);

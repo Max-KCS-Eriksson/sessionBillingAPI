@@ -84,7 +84,7 @@ class BillControllerTest {
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
         when(serviceRepository.findById("Coaching")).thenReturn(Optional.of(service));
-        when(billRepository.existsById(any(BillId.class))).thenReturn(false);
+        when(billRepository.existsByBillId(any(BillId.class))).thenReturn(false);
         when(billRepository.save(any(Bill.class))).thenReturn(bill);
 
         mockMvc.perform(
@@ -101,7 +101,7 @@ class BillControllerTest {
 
         verify(customerRepository).findById(any(PersonalId.class));
         verify(serviceRepository).findById("Coaching");
-        verify(billRepository).existsById(any(BillId.class));
+        verify(billRepository).existsByBillId(any(BillId.class));
         verify(billRepository).save(any(Bill.class));
     }
 
@@ -118,7 +118,7 @@ class BillControllerTest {
                 .thenReturn(Optional.of(customer));
         when(serviceRepository.findById("Coaching"))
                 .thenReturn(Optional.of(new Service("Coaching", 500)));
-        when(billRepository.existsById(any(BillId.class))).thenReturn(true);
+        when(billRepository.existsByBillId(any(BillId.class))).thenReturn(true);
 
         mockMvc.perform(
                         post("/bills")
@@ -129,7 +129,7 @@ class BillControllerTest {
 
         verify(customerRepository).findById(any(PersonalId.class));
         verify(serviceRepository).findById("Coaching");
-        verify(billRepository).existsById(any(BillId.class));
+        verify(billRepository).existsByBillId(any(BillId.class));
     }
 
     @Test
@@ -147,7 +147,7 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.of(existingBill));
         when(serviceRepository.findById("Advanced")).thenReturn(Optional.of(replacementService));
         when(billRepository.save(any(Bill.class)))
                 .thenReturn(new Bill(id, replacementService, 4, true));
@@ -162,7 +162,7 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.paid").value(true));
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
         verify(serviceRepository).findById("Advanced");
         verify(billRepository).save(any(Bill.class));
     }
@@ -178,7 +178,7 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(
                         put("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -187,7 +187,7 @@ class BillControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
     }
 
     @Test
@@ -204,7 +204,7 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.of(existingBill));
         when(billRepository.save(any(Bill.class))).thenReturn(new Bill(id, service, 3, true));
 
         mockMvc.perform(
@@ -216,7 +216,7 @@ class BillControllerTest {
                 .andExpect(jsonPath("$.paid").value(true));
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
         verify(billRepository).save(any(Bill.class));
     }
 
@@ -231,7 +231,7 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(
                         patch("/bills/19900102-0123/2026-01-01T10:00:00")
@@ -240,7 +240,7 @@ class BillControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
     }
 
     @Test
@@ -256,13 +256,13 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.of(existingBill));
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.of(existingBill));
 
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNoContent());
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
         verify(billRepository).delete(existingBill);
     }
 
@@ -277,12 +277,12 @@ class BillControllerTest {
 
         when(customerRepository.findById(any(PersonalId.class)))
                 .thenReturn(Optional.of(customer));
-        when(billRepository.findById(any(BillId.class))).thenReturn(Optional.empty());
+        when(billRepository.findByBillId(any(BillId.class))).thenReturn(Optional.empty());
 
         mockMvc.perform(delete("/bills/19900102-0123/2026-01-01T10:00:00"))
                 .andExpect(status().isNotFound());
 
         verify(customerRepository).findById(any(PersonalId.class));
-        verify(billRepository).findById(any(BillId.class));
+        verify(billRepository).findByBillId(any(BillId.class));
     }
 }

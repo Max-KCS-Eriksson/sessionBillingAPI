@@ -230,7 +230,7 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
         if (id.isEmpty()) {
             return;
         }
-        Optional<Bill> bill = billRepository.findById(id.get());
+        Optional<Bill> bill = billRepository.findByBillId(id.get());
         if (bill.isPresent()) {
             String message =
                     bill.get().isPaid()
@@ -262,9 +262,9 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
             bookedTime = LocalDateTime.of(createLocalDate(), createLocalTime());
 
             id = new BillId(customerRepository.findById(customerId).get(), bookedTime);
-            isUniqueId = !billRepository.existsById(id);
+            isUniqueId = !billRepository.existsByBillId(id);
             if (!isUniqueId) {
-                Bill bill = billRepository.findById(id).get();
+                Bill bill = billRepository.findByBillId(id).get();
                 System.out.println("Bill already exists in the registry:\n  " + bill);
                 if (in.inputConfirmation("Mark Bill as Paid?\n")) {
                     bill.setPaid(true);
@@ -294,7 +294,7 @@ public class CommandLineRunnerImpl implements CommandLineRunner {
             bookedTime = LocalDateTime.of(createLocalDate(), createLocalTime());
 
             id = new BillId(customerRepository.findById(customerId).get(), bookedTime);
-            isUniqueId = billRepository.existsById(id);
+            isUniqueId = billRepository.existsByBillId(id);
             if (!isUniqueId) {
                 System.out.println("Bill doesn't exists in the registry:\n  " + id);
                 if (!in.inputConfirmation("Try again?\n")) {

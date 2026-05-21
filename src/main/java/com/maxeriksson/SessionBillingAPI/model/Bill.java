@@ -1,18 +1,31 @@
 package com.maxeriksson.SessionBillingAPI.model;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-/** Bill */
+/**
+ * Legacy bill aggregate.
+ *
+ * <p>The entity keeps the original bill identifier as a natural key but uses a generated primary
+ * key so the model can move away from the prototype composite-id shape.
+ */
 @Entity
 @Table(name = "bills")
 public class Bill {
 
-    @EmbeddedId private BillId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long databaseId;
+
+    @Embedded
+    private BillId billId;
 
     @ManyToOne()
     @JoinColumn(name = "service")
@@ -24,25 +37,33 @@ public class Bill {
     @Column(name = "isPaid")
     private boolean isPaid;
 
-    public Bill() {} // Required by JPA
+    public Bill() {}
 
     public Bill(BillId id, Service service, int hours) {
         this(id, service, hours, false);
     }
 
     public Bill(BillId id, Service service, int hours, boolean isPaid) {
-        this.id = id;
+        setId(id);
         this.service = service;
         setHours(hours);
         this.isPaid = isPaid;
     }
 
     public BillId getId() {
-        return id;
+        return billId;
     }
 
     public void setId(BillId id) {
-        this.id = id;
+        this.billId = id;
+    }
+
+    public Long getDatabaseId() {
+        return databaseId;
+    }
+
+    public void setDatabaseId(Long databaseId) {
+        this.databaseId = databaseId;
     }
 
     public Service getService() {
@@ -75,9 +96,9 @@ public class Bill {
     @Override
     public String toString() {
         return "Bill [customer="
-                + id.getCustomer().getPersonalId()
+                + billId.getCustomer().getPersonalId()
                 + ", booking="
-                + id.getBookedTime()
+                + billId.getBookedTime()
                 + ", service="
                 + service
                 + ", hours="
@@ -91,7 +112,7 @@ public class Bill {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((billId == null) ? 0 : billId.hashCode());
         return result;
     }
 
@@ -101,9 +122,9 @@ public class Bill {
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
         Bill other = (Bill) obj;
-        if (id == null) {
-            if (other.id != null) return false;
-        } else if (!id.equals(other.id)) return false;
+        if (billId == null) {
+            if (other.billId != null) return false;
+        } else if (!billId.equals(other.billId)) return false;
         return true;
     }
 }

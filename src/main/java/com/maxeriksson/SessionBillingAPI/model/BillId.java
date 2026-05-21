@@ -5,16 +5,19 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-/** BillId */
+/**
+ * Legacy bill natural key.
+ *
+ * <p>The identifier keeps the original customer/time combination available while the owning bill
+ * entity moves to a generated primary key.
+ */
 @Embeddable
 public class BillId implements Serializable {
 
-    @MapsId("customerId")
     @ManyToOne
     @JoinColumns({
         @JoinColumn(name = "customerDateOfBirth", referencedColumnName = "dateOfBirth"),
@@ -25,7 +28,7 @@ public class BillId implements Serializable {
     @Column(name = "bookedTime")
     private LocalDateTime bookedTime;
 
-    public BillId() {} // Required by JPA
+    public BillId() {}
 
     public BillId(Customer customer, LocalDateTime bookedTime) {
         this.customer = customer;
@@ -36,8 +39,12 @@ public class BillId implements Serializable {
         return customer;
     }
 
-    public void setCustomerId(Customer customer) {
+    public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public void setCustomerId(Customer customer) {
+        setCustomer(customer);
     }
 
     public LocalDateTime getBookedTime() {
