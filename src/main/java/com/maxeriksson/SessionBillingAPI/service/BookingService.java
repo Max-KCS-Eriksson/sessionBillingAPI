@@ -27,6 +27,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final CustomerService customerService;
     private final SessionTypeService sessionTypeService;
+    private final InvoiceService invoiceService;
 
     /**
      * Creates a booking service backed by the existing collaborators.
@@ -34,14 +35,17 @@ public class BookingService {
      * @param bookingRepository persistence boundary for booking records
      * @param customerService service layer used to resolve customers
      * @param sessionTypeService service layer used to resolve session type versions
+     * @param invoiceService service layer used to generate invoices for completed bookings
      */
     public BookingService(
             BookingRepository bookingRepository,
             CustomerService customerService,
-            SessionTypeService sessionTypeService) {
+            SessionTypeService sessionTypeService,
+            InvoiceService invoiceService) {
         this.bookingRepository = bookingRepository;
         this.customerService = customerService;
         this.sessionTypeService = sessionTypeService;
+        this.invoiceService = invoiceService;
     }
 
     /**
@@ -104,7 +108,11 @@ public class BookingService {
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         existingBooking.setStatus(request.status());
-        return bookingRepository.save(existingBooking);
+        Booking updatedBooking = bookingRepository.save(existingBooking);
+        if (updatedBooking.getStatus() == BookingStatus.COMPLETED) {
+            invoiceService.generateForCompletedBooking(updatedBooking);
+        }
+        return updatedBooking;
     }
 
     /**
