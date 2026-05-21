@@ -1,16 +1,9 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import com.maxeriksson.SessionBillingAPI.model.Bill;
-import com.maxeriksson.SessionBillingAPI.model.BillId;
-import com.maxeriksson.SessionBillingAPI.model.Customer;
-import com.maxeriksson.SessionBillingAPI.model.Service;
-import com.maxeriksson.SessionBillingAPI.model.PersonalId;
-import com.maxeriksson.SessionBillingAPI.repository.BillRepository;
-import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
-import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
+import com.maxeriksson.SessionBillingAPI.service.BillService;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,24 +23,15 @@ import java.util.List;
 @RequestMapping("/bills")
 public class BillController {
 
-    private final BillRepository billRepository;
-    private final CustomerRepository customerRepository;
-    private final ServiceRepository serviceRepository;
+    private final BillService billService;
 
     /**
-     * Creates a bill registry controller backed by the existing repository.
+     * Creates a bill registry controller backed by the service layer.
      *
-     * @param billRepository persistence boundary for bill records
-     * @param customerRepository persistence boundary for customer records
-     * @param serviceRepository persistence boundary for service records
+     * @param billService service-layer boundary for bill records
      */
-    public BillController(
-            BillRepository billRepository,
-            CustomerRepository customerRepository,
-            ServiceRepository serviceRepository) {
-        this.billRepository = billRepository;
-        this.customerRepository = customerRepository;
-        this.serviceRepository = serviceRepository;
+    public BillController(BillService billService) {
+        this.billService = billService;
     }
 
     /**
@@ -59,7 +41,7 @@ public class BillController {
      */
     @GetMapping
     public List<Bill> findAll() {
-        return billRepository.findAll();
+        return billService.findAll();
     }
 
     /**
@@ -70,16 +52,15 @@ public class BillController {
      */
     @PostMapping
     public ResponseEntity<Bill> create(@RequestBody BillCreateRequest request) {
-        Customer customer = findCustomer(request.customerPersonalId());
-        Service service = findService(request.serviceName());
-        BillId id = new BillId(customer, request.bookedTime());
-
-        if (billRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bill already exists");
-        }
-
-        Bill createdBill = new Bill(id, service, request.hours(), request.paid());
-        return ResponseEntity.status(HttpStatus.CREATED).body(billRepository.save(createdBill));
+        Bill createdBill =
+                billService.create(
+                        new BillService.BillCreateRequest(
+                                request.customerPersonalId(),
+                                request.bookedTime(),
+                                request.serviceName(),
+                                request.hours(),
+                                request.paid()));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(createdBill);
     }
 
     /**
@@ -95,18 +76,13 @@ public class BillController {
             @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime,
             @RequestBody BillReplaceRequest request) {
-        BillId id = toBillId(customerPersonalId, bookedTime);
-
-        Bill existingBill =
-                billRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        existingBill.setService(findService(request.serviceName()));
-        existingBill.setHours(request.hours());
-        existingBill.setPaid(request.paid());
-
-        return ResponseEntity.ok(billRepository.save(existingBill));
+        Bill updatedBill =
+                billService.replace(
+                        customerPersonalId,
+                        bookedTime,
+                        new BillService.BillReplaceRequest(
+                                request.serviceName(), request.hours(), request.paid()));
+        return ResponseEntity.ok(updatedBill);
     }
 
     /**
@@ -122,24 +98,13 @@ public class BillController {
             @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime,
             @RequestBody BillPatchRequest request) {
-        BillId id = toBillId(customerPersonalId, bookedTime);
-
-        Bill existingBill =
-                billRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        if (request.serviceName() != null) {
-            existingBill.setService(findService(request.serviceName()));
-        }
-        if (request.hours() != null) {
-            existingBill.setHours(request.hours());
-        }
-        if (request.paid() != null) {
-            existingBill.setPaid(request.paid());
-        }
-
-        return ResponseEntity.ok(billRepository.save(existingBill));
+        Bill updatedBill =
+                billService.patch(
+                        customerPersonalId,
+                        bookedTime,
+                        new BillService.BillPatchRequest(
+                                request.serviceName(), request.hours(), request.paid()));
+        return ResponseEntity.ok(updatedBill);
     }
 
     /**
@@ -153,14 +118,7 @@ public class BillController {
     public ResponseEntity<Void> delete(
             @PathVariable String customerPersonalId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime bookedTime) {
-        BillId id = toBillId(customerPersonalId, bookedTime);
-
-        Bill existingBill =
-                billRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        billRepository.delete(existingBill);
+        billService.delete(customerPersonalId, bookedTime);
         return ResponseEntity.noContent().build();
     }
 
@@ -198,64 +156,4 @@ public class BillController {
      */
     public record BillPatchRequest(String serviceName, Integer hours, Boolean paid) {}
 
-    /**
-     * Resolves a customer by personal id.
-     *
-     * @param personalId customer identifier from the request
-     * @return matching customer record
-     */
-    private Customer findCustomer(String personalId) {
-        PersonalId id = toPersonalId(personalId);
-        return customerRepository
-                .findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
-    }
-
-    /**
-     * Resolves a service by its unique name.
-     *
-     * @param name service name from the request
-     * @return matching service record
-     */
-    private Service findService(String name) {
-        return serviceRepository
-                .findById(name)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
-    }
-
-    /**
-     * Builds a bill id from the path parameters.
-     *
-     * @param customerPersonalId customer identifier from the request path
-     * @param bookedTime bill timestamp from the request path
-     * @return resolved bill identifier
-     */
-    private BillId toBillId(String customerPersonalId, LocalDateTime bookedTime) {
-        return new BillId(findCustomer(customerPersonalId), bookedTime);
-    }
-
-    /**
-     * Parses the legacy personal id format used by the prototype.
-     *
-     * @param personalId customer identifier from the request
-     * @return parsed identifier value object
-     */
-    private PersonalId toPersonalId(String personalId) {
-        String[] parts = personalId.split("-");
-        if (parts.length != 2 || parts[0].length() != 8 || parts[1].length() != 4) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
-        }
-
-        try {
-            LocalDate dateOfBirth =
-                    LocalDate.of(
-                            Integer.parseInt(parts[0].substring(0, 4)),
-                            Integer.parseInt(parts[0].substring(4, 6)),
-                            Integer.parseInt(parts[0].substring(6, 8)));
-            Integer idLastFour = Integer.parseInt(parts[1]);
-            return new PersonalId(dateOfBirth, idLastFour);
-        } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid personal id");
-        }
-    }
 }

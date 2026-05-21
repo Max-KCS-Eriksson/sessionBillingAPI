@@ -1,9 +1,8 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import com.maxeriksson.SessionBillingAPI.model.Service;
-import com.maxeriksson.SessionBillingAPI.repository.ServiceRepository;
+import com.maxeriksson.SessionBillingAPI.service.ServiceCatalogService;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -23,15 +21,15 @@ import java.util.List;
 @RequestMapping("/services")
 public class ServiceController {
 
-    private final ServiceRepository serviceRepository;
+    private final ServiceCatalogService serviceCatalogService;
 
     /**
-     * Creates a service registry controller backed by the existing repository.
+     * Creates a service registry controller backed by the service layer.
      *
-     * @param serviceRepository persistence boundary for service records
+     * @param serviceCatalogService service-layer boundary for service records
      */
-    public ServiceController(ServiceRepository serviceRepository) {
-        this.serviceRepository = serviceRepository;
+    public ServiceController(ServiceCatalogService serviceCatalogService) {
+        this.serviceCatalogService = serviceCatalogService;
     }
 
     /**
@@ -41,7 +39,7 @@ public class ServiceController {
      */
     @GetMapping
     public List<Service> findAll() {
-        return serviceRepository.findAll();
+        return serviceCatalogService.findAll();
     }
 
     /**
@@ -52,8 +50,8 @@ public class ServiceController {
      */
     @GetMapping("/{name}")
     public ResponseEntity<Service> findByName(@PathVariable String name) {
-        return serviceRepository
-                .findById(name)
+        return serviceCatalogService
+                .findByName(name)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -66,11 +64,10 @@ public class ServiceController {
      */
     @PostMapping
     public ResponseEntity<Service> create(@RequestBody ServiceRequest request) {
-        if (serviceRepository.existsById(request.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Service already exists");
-        }
-        Service createdService = new Service(request.name(), request.sekPerHour());
-        return ResponseEntity.status(HttpStatus.CREATED).body(serviceRepository.save(createdService));
+        Service createdService =
+                serviceCatalogService.create(
+                        new ServiceCatalogService.ServiceRequest(request.name(), request.sekPerHour()));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(createdService);
     }
 
     /**
@@ -83,15 +80,10 @@ public class ServiceController {
     @PutMapping("/{name}")
     public ResponseEntity<Service> replace(
             @PathVariable String name, @RequestBody ServiceRequest request) {
-        Service existingService =
-                serviceRepository
-                        .findById(name)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        existingService.setName(request.name());
-        existingService.setSekPerHour(request.sekPerHour());
-
-        return ResponseEntity.ok(serviceRepository.save(existingService));
+        Service replacedService =
+                serviceCatalogService.replace(
+                        name, new ServiceCatalogService.ServiceRequest(request.name(), request.sekPerHour()));
+        return ResponseEntity.ok(replacedService);
     }
 
     /**
@@ -104,14 +96,10 @@ public class ServiceController {
     @PatchMapping("/{name}")
     public ResponseEntity<Service> patch(
             @PathVariable String name, @RequestBody ServicePatchRequest request) {
-        Service existingService =
-                serviceRepository
-                        .findById(name)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        existingService.setSekPerHour(request.sekPerHour());
-
-        return ResponseEntity.ok(serviceRepository.save(existingService));
+        Service updatedService =
+                serviceCatalogService.patch(
+                        name, new ServiceCatalogService.ServicePatchRequest(request.sekPerHour()));
+        return ResponseEntity.ok(updatedService);
     }
 
     /**
@@ -122,12 +110,7 @@ public class ServiceController {
      */
     @DeleteMapping("/{name}")
     public ResponseEntity<Void> delete(@PathVariable String name) {
-        Service existingService =
-                serviceRepository
-                        .findById(name)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        serviceRepository.delete(existingService);
+        serviceCatalogService.delete(name);
         return ResponseEntity.noContent().build();
     }
 
