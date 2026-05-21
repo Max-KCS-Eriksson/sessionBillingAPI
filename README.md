@@ -30,6 +30,7 @@ incrementally without removing the working prototype flow too early.
 - REST endpoints for listing customers, services, and billing records.
 - REST create, replace, patch, and delete operations for customers and services.
 - REST create, replace, patch, and delete operations for billing records.
+- Customer, service, and billing REST workflows now route through service layers.
 - Controller tests covering the current REST surface.
 
 ## Current REST Surface
