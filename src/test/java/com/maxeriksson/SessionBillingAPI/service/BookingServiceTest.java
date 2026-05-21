@@ -37,6 +37,7 @@ class BookingServiceTest {
     @Mock private BookingRepository bookingRepository;
     @Mock private CustomerService customerService;
     @Mock private SessionTypeService sessionTypeService;
+    @Mock private InvoiceService invoiceService;
 
     @InjectMocks private BookingService bookingService;
 
@@ -72,6 +73,7 @@ class BookingServiceTest {
         verify(customerService).findByPersonalId("19900102-0123");
         verify(sessionTypeService).findCurrentVersion("GroupSession");
         verify(bookingRepository).save(any(Booking.class));
+        verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
@@ -91,6 +93,7 @@ class BookingServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         verify(customerService).findByPersonalId("19900102-0123");
         verifyNoMoreInteractions(sessionTypeService);
+        verifyNoMoreInteractions(invoiceService);
         verifyNoMoreInteractions(bookingRepository);
     }
 
@@ -110,6 +113,27 @@ class BookingServiceTest {
         assertEquals(BookingStatus.COMPLETED, updated.getStatus());
         verify(bookingRepository).findById(1L);
         verify(bookingRepository).save(existingBooking);
+        verify(invoiceService).generateForCompletedBooking(existingBooking);
+    }
+
+    @Test
+    void updateStatusDoesNotGenerateInvoiceWhenCancelled() {
+        Booking existingBooking =
+                new Booking(
+                        sampleCustomer(),
+                        sampleSessionTypeVersion(),
+                        LocalDateTime.of(2026, 1, 1, 10, 0),
+                        BookingStatus.BOOKED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(existingBooking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Booking updated =
+                bookingService.updateStatus(1L, new BookingService.BookingStatusRequest(BookingStatus.CANCELLED));
+
+        assertEquals(BookingStatus.CANCELLED, updated.getStatus());
+        verify(bookingRepository).findById(1L);
+        verify(bookingRepository).save(existingBooking);
+        verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
@@ -124,6 +148,7 @@ class BookingServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         verify(bookingRepository).findById(1L);
         verifyNoMoreInteractions(bookingRepository);
+        verifyNoMoreInteractions(invoiceService);
     }
 
     private Customer sampleCustomer() {
