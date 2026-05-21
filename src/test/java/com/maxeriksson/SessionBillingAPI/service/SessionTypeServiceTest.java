@@ -38,6 +38,34 @@ class SessionTypeServiceTest {
     @InjectMocks private SessionTypeService sessionTypeService;
 
     @Test
+    void findCurrentVersionReturnsVersion() {
+        SessionType sessionType = new SessionType("GroupSession");
+        SessionTypeVersion currentVersion =
+                new SessionTypeVersion(
+                        sessionType,
+                        new ServiceOfferingVersion(
+                                new ServiceOffering("Coaching"),
+                                1,
+                                new BigDecimal("500.00"),
+                                "SEK",
+                                true),
+                        1,
+                        90,
+                        true);
+
+        when(sessionTypeRepository.findByName("GroupSession")).thenReturn(Optional.of(sessionType));
+        when(sessionTypeVersionRepository.findFirstBySessionTypeAndCurrentVersionTrue(sessionType))
+                .thenReturn(Optional.of(currentVersion));
+
+        Optional<SessionTypeVersion> result = sessionTypeService.findCurrentVersion("GroupSession");
+
+        assertEquals(Optional.of(currentVersion), result);
+        verify(sessionTypeRepository).findByName("GroupSession");
+        verify(sessionTypeVersionRepository)
+                .findFirstBySessionTypeAndCurrentVersionTrue(sessionType);
+    }
+
+    @Test
     void createReturnsInitialVersionWhenSessionTypeNameIsAvailable() {
         ServiceOfferingVersion serviceOfferingVersion =
                 new ServiceOfferingVersion(

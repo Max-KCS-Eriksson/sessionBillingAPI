@@ -43,6 +43,22 @@ public class SessionTypeService {
     }
 
     /**
+     * Looks up the current version for an existing session type.
+     *
+     * @param name unique session type name
+     * @return current version if the session type exists and has one
+     */
+    @Transactional(readOnly = true)
+    public Optional<SessionTypeVersion> findCurrentVersion(String name) {
+        return sessionTypeRepository
+                .findByName(name)
+                .flatMap(
+                        sessionType ->
+                                sessionTypeVersionRepository
+                                        .findFirstBySessionTypeAndCurrentVersionTrue(sessionType));
+    }
+
+    /**
      * Creates a new session type together with its first version.
      *
      * @param request session type creation payload
