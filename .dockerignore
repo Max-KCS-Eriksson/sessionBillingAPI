@@ -1,0 +1,9 @@
+target/
+.git/
+.idea/
+.codex/
+.agents/
+docs/case-study.md
+src/main/resources/application.properties
+README.md
+*.iml

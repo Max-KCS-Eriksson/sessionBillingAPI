@@ -1,10 +1,8 @@
 package com.maxeriksson.SessionBillingAPI.controller;
 
 import com.maxeriksson.SessionBillingAPI.model.Customer;
-import com.maxeriksson.SessionBillingAPI.model.SocialSecurityNumber;
-import com.maxeriksson.SessionBillingAPI.repository.CustomerRepository;
+import com.maxeriksson.SessionBillingAPI.service.CustomerService;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,15 +22,15 @@ import java.util.List;
 @RequestMapping("/customers")
 public class CustomerController {
 
-    private final CustomerRepository customerRepository;
+    private final CustomerService customerService;
 
     /**
      * Creates a customer registry controller backed by the existing repository.
      *
-     * @param customerRepository persistence boundary for customer records
+     * @param customerService service-layer boundary for customer records
      */
-    public CustomerController(CustomerRepository customerRepository) {
-        this.customerRepository = customerRepository;
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
     }
 
     /**
@@ -43,118 +40,68 @@ public class CustomerController {
      */
     @GetMapping
     public List<Customer> findAll() {
-        return customerRepository.findAll();
+        return customerService.findAll();
     }
 
     /**
-     * Finds one customer by social security number.
+     * Finds one customer by personal id.
      *
-     * @param socialSecurityNumber customer identifier from request path
+     * @param personalId customer identifier from request path
      * @return matching customer or 404
      */
-    @GetMapping("/{socialSecurityNumber}")
-    public ResponseEntity<Customer> findBySocialSecurityNumber(@PathVariable String socialSecurityNumber) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
-        return customerRepository
-                .findById(id)
+    @GetMapping("/{personalId}")
+    public ResponseEntity<Customer> findByPersonalId(@PathVariable String personalId) {
+        return customerService
+                .findByPersonalId(personalId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<Customer> create(@RequestBody CustomerCreateRequest request) {
-        SocialSecurityNumber socialSecurityNumber =
-                new SocialSecurityNumber(request.dateOfBirth(), request.idLastFour());
-        if (customerRepository.existsById(socialSecurityNumber)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Customer already exists");
-        }
-
         Customer createdCustomer =
-                new Customer(
-                        socialSecurityNumber,
-                        request.firstName(),
-                        request.lastName(),
-                        request.address());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(customerRepository.save(createdCustomer));
+                customerService.create(
+                        new CustomerService.CustomerCreateRequest(
+                                request.dateOfBirth(),
+                                request.idLastFour(),
+                                request.firstName(),
+                                request.lastName(),
+                                request.address()));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(createdCustomer);
     }
 
-    @PutMapping("/{socialSecurityNumber}")
+    @PutMapping("/{personalId}")
     public ResponseEntity<Customer> replace(
-            @PathVariable String socialSecurityNumber, @RequestBody CustomerReplaceRequest request) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
-
-        Customer existingCustomer =
-                customerRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        existingCustomer.setFirstName(request.firstName());
-        existingCustomer.setLastName(request.lastName());
-        existingCustomer.setAddress(request.address());
-
-        return ResponseEntity.ok(customerRepository.save(existingCustomer));
+            @PathVariable String personalId, @RequestBody CustomerReplaceRequest request) {
+        Customer updatedCustomer =
+                customerService.replace(
+                        personalId,
+                        new CustomerService.CustomerReplaceRequest(
+                                request.firstName(), request.lastName(), request.address()));
+        return ResponseEntity.ok(updatedCustomer);
     }
 
-    @PatchMapping("/{socialSecurityNumber}")
+    @PatchMapping("/{personalId}")
     public ResponseEntity<Customer> patch(
-            @PathVariable String socialSecurityNumber, @RequestBody CustomerPatchRequest request) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
-
-        Customer existingCustomer =
-                customerRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        if (request.firstName() != null) {
-            existingCustomer.setFirstName(request.firstName());
-        }
-        if (request.lastName() != null) {
-            existingCustomer.setLastName(request.lastName());
-        }
-        if (request.address() != null) {
-            existingCustomer.setAddress(request.address());
-        }
-
-        return ResponseEntity.ok(customerRepository.save(existingCustomer));
+            @PathVariable String personalId, @RequestBody CustomerPatchRequest request) {
+        Customer updatedCustomer =
+                customerService.patch(
+                        personalId,
+                        new CustomerService.CustomerPatchRequest(
+                                request.firstName(), request.lastName(), request.address()));
+        return ResponseEntity.ok(updatedCustomer);
     }
 
     /**
      * Deletes an existing customer record.
      *
-     * @param socialSecurityNumber customer identifier from the request path
+     * @param personalId customer identifier from the request path
      * @return no content when the customer is removed
      */
-    @DeleteMapping("/{socialSecurityNumber}")
-    public ResponseEntity<Void> delete(@PathVariable String socialSecurityNumber) {
-        SocialSecurityNumber id = toSocialSecurityNumber(socialSecurityNumber);
-
-        Customer existingCustomer =
-                customerRepository
-                        .findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
-        customerRepository.delete(existingCustomer);
+    @DeleteMapping("/{personalId}")
+    public ResponseEntity<Void> delete(@PathVariable String personalId) {
+        customerService.delete(personalId);
         return ResponseEntity.noContent().build();
-    }
-
-    private SocialSecurityNumber toSocialSecurityNumber(String socialSecurityNumber) {
-        String[] parts = socialSecurityNumber.split("-");
-        if (parts.length != 2 || parts[0].length() != 8 || parts[1].length() != 4) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
-        }
-
-        try {
-            LocalDate dateOfBirth =
-                    LocalDate.of(
-                            Integer.parseInt(parts[0].substring(0, 4)),
-                            Integer.parseInt(parts[0].substring(4, 6)),
-                            Integer.parseInt(parts[0].substring(6, 8)));
-            Integer idLastFour = Integer.parseInt(parts[1]);
-            return new SocialSecurityNumber(dateOfBirth, idLastFour);
-        } catch (RuntimeException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social security number");
-        }
     }
 
     public record CustomerCreateRequest(
