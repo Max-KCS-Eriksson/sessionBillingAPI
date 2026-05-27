@@ -19,7 +19,7 @@ The implemented system is centered on REST workflows for:
 
 - Spring Boot application using Java 21.
 - JPA repositories for customer, service, booking, and invoice data.
-- MySQL-backed persistence configuration.
+- PostgreSQL-backed persistence configuration.
 - REST endpoints for listing customers, services, service offerings, session types, bookings, and invoices.
 - REST create, replace, patch, and delete operations for customers and services.
 - REST create and version operations for service offerings.
@@ -62,14 +62,17 @@ Requirements:
 
 - Java 21
 - Maven or the included Maven wrapper
-- MySQL database named `SessionBillingAPI`
-- A local-only `src/main/resources/application.properties` created from `src/main/resources/application.example.properties`
+- Docker and Docker Compose
 
-Run the Spring Boot application:
+Run the containerized stack:
 
 ```bash
-./mvnw spring-boot:run
+docker compose up --build
 ```
+
+This starts the Spring Boot API and PostgreSQL database together.
+
+If you want to run the app outside Docker, copy `src/main/resources/application.example.properties` to `src/main/resources/application.properties` and provide a reachable PostgreSQL instance.
 
 ## Testing
 
