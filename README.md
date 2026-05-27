@@ -1,78 +1,84 @@
 # Session Billing API
 
-REST-first Spring Boot API for session billing workflows.
+REST API for session billing workflows.
 
-Session Billing API is a backend MVP for tracking billable customer sessions,
-service rates, bookings, and invoices. The project started as a CLI prototype
-and now exposes the core workflow through REST endpoints.
+Session Billing API is for tracking billable customer sessions, service rates,
+bookings, and invoices.
 
-The implemented system is centered on REST workflows for:
+It models a small billing domain:
 
-- customers
-- services and hourly rates
-- service offerings and versions
-- session types and versions
-- bookings
-- invoices
+- customers who can be billed
+- services with hourly rates
+- service offerings and version history for price changes
+- session types and version history for duration changes
+- bookings tied to a customer and session type version
+- invoices generated from completed bookings
 
-## What Works Today
+The application uses Spring Boot, Spring Web, Spring Data JPA, and PostgreSQL.
+REST controllers are kept thin and delegate to service-layer workflow classes.
+Tests cover the current controller and service behavior.
 
-- Spring Boot application using Java 21.
-- JPA repositories for customer, service, booking, and invoice data.
-- PostgreSQL-backed persistence configuration.
-- REST endpoints for listing customers, services, service offerings, session types, bookings, and invoices.
-- REST create, replace, patch, and delete operations for customers and services.
-- REST create and version operations for service offerings.
-- REST create and version operations for session types.
-- REST create and status transition operations for bookings.
-- REST invoice generation from completed bookings.
-- REST delete protection for unpaid invoices.
-- Customer, service, booking, and invoice REST workflows now route through service layers.
-- Controller and service tests covering the current REST surface.
+## API Endpoints
 
-## Current REST Surface
+### Customers
 
-Available endpoints include:
+- `GET /customers` lists all customers.
+- `GET /customers/{personalId}` fetches one customer by personal id.
+- `POST /customers` creates a customer.
+- `PUT /customers/{personalId}` fully replaces a customer.
+- `PATCH /customers/{personalId}` partially updates a customer.
+- `DELETE /customers/{personalId}` removes a customer.
+- Create requests require `dateOfBirth`, `idLastFour`, `firstName`, `lastName`, and `address`.
+- Replace and patch requests require customer name and address fields.
 
-- `GET /customers`
-- `GET /customers/{customerIdentifier}`
-- `POST /customers`
-- `PUT /customers/{customerIdentifier}`
-- `PATCH /customers/{customerIdentifier}`
-- `DELETE /customers/{customerIdentifier}`
-- `GET /services`
-- `GET /services/{name}`
-- `POST /services`
-- `PUT /services/{name}`
-- `PATCH /services/{name}`
-- `DELETE /services/{name}`
-- `POST /service-offerings`
-- `POST /service-offerings/{name}/versions`
-- `POST /session-types`
-- `POST /session-types/{name}/versions`
-- `GET /bookings`
-- `POST /bookings`
-- `PATCH /bookings/{id}/status`
-- `GET /invoices`
-- `DELETE /invoices/{id}`
+### Services
 
-## Running Locally
+- `GET /services` lists all services.
+- `GET /services/{name}` fetches one service by name.
+- `POST /services` creates a service.
+- `PUT /services/{name}` fully replaces a service.
+- `PATCH /services/{name}` updates a service rate.
+- `DELETE /services/{name}` removes a service.
+- Create and replace requests require `name` and `sekPerHour`.
+- Patch requests require `sekPerHour`.
 
-Requirements:
+### Service Offerings
 
-- Java 21
-- Maven or the included Maven wrapper
-- Docker and Docker Compose
+- `POST /service-offerings` creates a service offering and its first version.
+- `POST /service-offerings/{name}/versions` creates a new version for an existing offering.
+- Requests require `name`, `hourlyChargeAmount`, and `currencyCode` for creation.
+- Version requests require `hourlyChargeAmount` and `currencyCode`.
 
-Run the containerized stack:
+### Session Types
 
-```bash
-docker compose up --build
-```
+- `POST /session-types` creates a session type and its first version.
+- `POST /session-types/{name}/versions` creates a new version for an existing session type.
+- Requests require `name`, `durationMinutes`, and `serviceOfferingName` for creation.
+- Version requests require `durationMinutes` and `serviceOfferingName`.
 
-This starts the Spring Boot API and PostgreSQL database together.
+### Bookings
 
-If you want to run the app outside Docker, copy `src/main/resources/application.example.properties` to `src/main/resources/application.properties` and provide a reachable PostgreSQL instance.
+- `GET /bookings` lists all bookings.
+- `POST /bookings` creates a booking in the `BOOKED` state.
+- `PATCH /bookings/{id}/status` updates the booking status.
+- Create requests require `customerPersonalId`, `sessionTypeName`, and `bookedTime`.
+- Status updates accept `BOOKED`, `CANCELLED`, or `COMPLETED`.
+- Marking a booking `COMPLETED` automatically generates an invoice if one does not already exist.
+
+### Invoices
+
+- `GET /invoices` lists all invoices.
+- `DELETE /invoices/{id}` deletes an invoice only when the invoice is not unpaid.
+- Unpaid invoices are protected from deletion.
+
+## Deployment
+
+- Docker and Docker Compose are required for the standard deployment path.
+- Run the stack with `docker compose up --build`.
+- The PostgreSQL database container creates the database automatically.
+- Hibernate creates or updates the tables automatically when the API starts.
+- The API is exposed on `http://localhost:8080`.
+- Stop the stack with `docker compose down`.
 
 ## Testing
 
@@ -81,18 +87,3 @@ Run the test suite with:
 ```bash
 ./mvnw test
 ```
-
-## Project Direction
-
-The goal is to continue hardening this REST API for a realistic billing
-workflow:
-
-- manage customers
-- manage service offerings
-- record completed sessions
-- generate invoices from unbilled sessions
-- prevent the same completed session from being billed twice
-- track invoice payment status
-
-The project is intentionally scoped as a backend API, not a full accounting
-product.
